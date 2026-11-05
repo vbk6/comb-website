@@ -1867,6 +1867,14 @@ h3 {
   pointer-events: none;
 }
 
+.comby-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
 /* near the right edge the bubble opens to the left instead */
 .comby.bubble-left .comby-bubble {
   left: auto;
@@ -1936,6 +1944,69 @@ h3 {
   color: var(--subtle);
 }
 
+/* ---------- Sound toggle ---------- */
+.sound-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(var(--bg-rgb), 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--muted);
+  transition: color 0.3s, background 0.3s, transform 0.4s var(--ease);
+}
+
+.sound-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sound-toggle:hover {
+  color: var(--text);
+  transform: scale(1.08);
+}
+
+.sound-toggle[aria-pressed="true"] {
+  color: var(--on-primary);
+  background: var(--primary);
+  border-color: transparent;
+}
+
+.sound-toggle .snd-wave { display: none; }
+.sound-toggle[aria-pressed="true"] .snd-wave { display: block; animation: sndWave 1.4s ease-in-out infinite; }
+.sound-toggle[aria-pressed="true"] .snd-wave-2 { animation-delay: 0.2s; }
+.sound-toggle[aria-pressed="true"] .snd-off { display: none; }
+
+@keyframes sndWave {
+  50% { opacity: 0.25; }
+}
+
+/* a gentle "try me" pulse the first time Comby says hello */
+.sound-toggle.is-hinting::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  animation: sndHint 1.2s ease-out 3;
+  pointer-events: none;
+}
+
+@keyframes sndHint {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(1.7); opacity: 0; }
+}
+
+.sound-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
   .main-nav,
@@ -1945,6 +2016,11 @@ h3 {
 
   .nav-wrap > .guide-switch {
     display: none; /* lives in the menu on small screens */
+  }
+
+  .sound-toggle {
+    width: 34px;
+    height: 34px;
   }
 
   .theme-switch {
@@ -2078,6 +2154,11 @@ h3 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .sound-toggle .snd-wave,
+  .sound-toggle.is-hinting::after {
+    animation: none !important;
+  }
+
   .grain,
   .eyebrow-dot,
   .scroll-line::after,

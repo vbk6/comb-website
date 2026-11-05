@@ -167,7 +167,6 @@ const THEMES = {
 
 let themeName = THEMES[document.documentElement.dataset.theme] ? document.documentElement.dataset.theme : 'blush';
 const theme = () => THEMES[themeName];
-let currentScene = 'hero';
 
 /* ------------------------------------------------------------------ */
 /* WebGL: star field + falling hair clippings                          */
@@ -353,8 +352,7 @@ function initWebGL() {
 initWebGL();
 
 function goToScene(name) {
-  if (name === currentScene && comby.arrived) return;
-  currentScene = name;
+  if (name === comby.scene) return;
   comby.goTo(name);
 }
 
@@ -373,6 +371,249 @@ function setupSceneTriggers() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Comby's voice and sounds. Lines are read aloud with the browser's   */
+/* built-in speech (Web Speech API); effects are synthesised live with */
+/* Web Audio, so there are no audio files. Off by default: browsers    */
+/* only allow audio after a user gesture.                              */
+/* ------------------------------------------------------------------ */
+const sfx = (() => {
+  const toggleBtn = document.querySelector('.sound-toggle');
+  let ctx = null;
+  let master = null;
+  let noiseBuf = null;
+  let on = false;
+  try {
+    on = localStorage.getItem('comb-sound') === '1';
+  } catch (e) {}
+
+  function ensure() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.2;
+      master.connect(ctx.destination);
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+      const data = noiseBuf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    }
+    if (ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {});
+    return ctx;
+  }
+
+  const ready = () => on && ensure() && ctx.state === 'running';
+
+  // one oscillator note with a quick attack and exponential decay
+  function tone(freq, { at = 0, dur = 0.08, type = 'sine', vol = 0.2, to = null, vibrato = 0 } = {}) {
+    const t = ctx.currentTime + at;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+    if (vibrato) {
+      const lfo = ctx.createOscillator();
+      const depth = ctx.createGain();
+      lfo.frequency.value = 18;
+      depth.gain.value = vibrato;
+      lfo.connect(depth).connect(osc.frequency);
+      lfo.start(t);
+      lfo.stop(t + dur + 0.02);
+    }
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g).connect(master);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  // filtered noise burst (thuds, whooshes)
+  function noise({ at = 0, dur = 0.15, vol = 0.2, freq = 800, to = null, q = 1, type = 'bandpass' } = {}) {
+    const t = ctx.currentTime + at;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = type;
+    filter.Q.value = q;
+    filter.frequency.setValueAtTime(freq, t);
+    if (to) filter.frequency.exponentialRampToValueAtTime(to, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter).connect(g).connect(master);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+
+  const api = {
+    get on() {
+      return on;
+    },
+
+    // chirpy babble that follows the text: one blip per syllable-ish, rising at ! and ?
+    voice(text, { base = 520, type = 'triangle' } = {}) {
+      if (!ready()) return;
+      const letters = text.replace(/[^a-zA-Z]/g, '');
+      const count = Math.min(26, Math.max(3, Math.round(letters.length / 2.4)));
+      const end = text.trim().slice(-1);
+      for (let i = 0; i < count; i++) {
+        const c = letters.charCodeAt(Math.floor((i / count) * letters.length)) || 97;
+        let f = base * (1 + ((c % 7) - 3) * 0.055) * (0.97 + Math.random() * 0.06);
+        if (i === count - 1 && (end === '!' || end === '?')) f *= 1.3;
+        tone(f, { at: i * 0.062, dur: 0.055, type, vol: 0.13, to: f * (0.92 + Math.random() * 0.1) });
+      }
+    },
+    step() {
+      if (!ready()) return;
+      tone(170 + Math.random() * 40, { dur: 0.05, type: 'sine', vol: 0.12, to: 90 });
+    },
+    land() {
+      if (!ready()) return;
+      tone(150, { dur: 0.18, type: 'sine', vol: 0.3, to: 55 });
+      noise({ dur: 0.12, vol: 0.12, freq: 400, type: 'lowpass' });
+    },
+    hop() {
+      if (!ready()) return;
+      tone(320, { dur: 0.16, type: 'sine', vol: 0.16, to: 760 });
+    },
+    giggle() {
+      if (!ready()) return;
+      [700, 820, 760, 940].forEach((f, i) => tone(f, { at: 0.12 + i * 0.09, dur: 0.08, type: 'triangle', vol: 0.12, vibrato: 30 }));
+    },
+    sparkle() {
+      if (!ready()) return;
+      [1568, 2093, 2637].forEach((f, i) => tone(f, { at: i * 0.07, dur: 0.35, type: 'sine', vol: 0.07 }));
+    },
+    whoosh() {
+      if (!ready()) return;
+      noise({ dur: 0.3, vol: 0.18, freq: 300, to: 3000, q: 1.5 });
+    },
+    pop() {
+      if (!ready()) return;
+      tone(500, { dur: 0.1, type: 'sine', vol: 0.22, to: 1100 });
+    },
+  };
+
+  // ---- spoken voice ----
+  const synth = window.speechSynthesis;
+  let ttsVoice = null;
+  let utter = null; // kept referenced so Chrome doesn't garbage-collect it mid-sentence
+  // male voices, most natural first: Edge's neural voices, macOS Enhanced/Premium downloads,
+  // Google's network voice in Chrome, then the better built-in system voices
+  const PREFERRED = [
+    /\b(andrew|brian|guy|christopher|eric|roger|ryan|thomas|davis|tony)\b.*\b(natural|online)\b/i,
+    /\b(evan|nathan|tom|aaron|alex|daniel|oliver|arthur|gordon|lee|rishi|jamie)\b.*\((enhanced|premium)\)/i,
+    /google uk english male/i,
+    /^daniel\b/i,
+    /^(alex|aaron|arthur|oliver|gordon|evan|nathan|tom)\b/i,
+    /microsoft (david|mark|george|ryan)\b/i,
+    /\bmale\b/i,
+  ];
+  // novelty / heavily synthetic voices that sound robotic
+  const AVOID = /^(albert|bad news|bahh|bells|boing|bubbles|cellos|wobble|fred|good news|jester|junior|organ|superstar|trinoids|whisper|zarvox|ralph|grandma|grandpa)\b/i;
+  const pickVoice = () => {
+    const voices = synth.getVoices().filter((v) => /^en([-_]|$)/i.test(v.lang) && !AVOID.test(v.name));
+    for (const re of PREFERRED) {
+      const v = voices.find((x) => re.test(x.name));
+      if (v) return v;
+    }
+    return voices.find((v) => v.default) || voices[0] || null;
+  };
+  if (synth) {
+    ttsVoice = pickVoice();
+    synth.onvoiceschanged = () => (ttsVoice = pickVoice());
+  }
+  // skip emoji so it doesn't read out "waving hand"
+  const speakable = (text) =>
+    text.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/…/g, '...').replace(/\s+/g, ' ').trim();
+
+  // read a line aloud; returns true if speech started (onEnd fires when it finishes)
+  api.speak = (text, opts = {}, onEnd) => {
+    if (!on) return false;
+    if (!synth) {
+      api.voice(text, opts); // no speech support: fall back to babble
+      return false;
+    }
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+      toggleBtn.classList.add('is-hinting');
+      return 'blocked';
+    }
+    api.stopSpeaking();
+    const u = new SpeechSynthesisUtterance(speakable(text));
+    if (ttsVoice) u.voice = ttsVoice;
+    u.lang = ttsVoice?.lang || 'en-US';
+    u.pitch = opts.pitch ?? 1;
+    u.rate = opts.rate ?? 1;
+    u.volume = opts.volume ?? 0.6;
+    u.onend = u.onerror = () => {
+      if (utter !== u) return; // a newer line took over
+      utter = null;
+      onEnd?.();
+    };
+    utter = u;
+    synth.speak(u);
+    return true;
+  };
+
+  api.stopSpeaking = () => {
+    if (!synth || !utter) return;
+    utter = null; // cleared first so the cancelled line's end event is ignored
+    synth.cancel();
+  };
+
+  function render() {
+    toggleBtn.setAttribute('aria-pressed', String(on));
+    toggleBtn.setAttribute('aria-label', on ? "Mute Comby's voice" : "Turn on Comby's voice");
+  }
+
+  api.setOn = (value) => {
+    on = value;
+    try {
+      localStorage.setItem('comb-sound', on ? '1' : '0');
+    } catch (e) {}
+    render();
+    toggleBtn.classList.remove('is-hinting');
+    if (on) ensure();
+    else api.stopSpeaking();
+  };
+
+  // browsers block speech until the visitor clicks, taps or presses a key (scrolling
+  // doesn't count); these run on that first interaction so Comby can catch up
+  const unlockCallbacks = [];
+  api.onUnlock = (fn) => unlockCallbacks.push(fn);
+
+  api.hint = () => {
+    if (on) return;
+    toggleBtn.classList.add('is-hinting');
+    setTimeout(() => toggleBtn.classList.remove('is-hinting'), 3800);
+  };
+
+  render();
+
+  // these events grant the page "user activation" (pointerdown only does for a mouse)
+  const UNLOCK_EVENTS = ['pointerup', 'touchend', 'keydown', 'click'];
+  const unlock = () => {
+    UNLOCK_EVENTS.forEach((type) => window.removeEventListener(type, unlock, true));
+    toggleBtn.classList.remove('is-hinting');
+    if (on) ensure();
+    unlockCallbacks.forEach((fn) => fn());
+  };
+  UNLOCK_EVENTS.forEach((type) => window.addEventListener(type, unlock, true));
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) api.stopSpeaking();
+    if (!ctx) return;
+    if (document.hidden) ctx.suspend();
+    else if (on) ctx.resume().catch(() => {});
+  });
+
+  return api;
+})();
+
+/* ------------------------------------------------------------------ */
 /* Comby, the guide that hops to each section, in two looks (comb and  */
 /* hairbrush). Both SVGs share part classes, so one controller drives  */
 /* either; each rig only adds its joints, mouth shapes, lines and      */
@@ -388,6 +629,7 @@ const comby = (() => {
   const RIGS = {
     comby: {
       label: 'Comby (comb)',
+      voice: { pitch: 0.98, rate: 1.05, volume: 0.55, base: 560, type: 'triangle' },
       joints: { armL: '30 92', armR: '130 92', legL: '48 118', legR: '112 118', eyeL: '61 84', eyeR: '99 84' },
       thinkArm: -100,
       stride: 22,
@@ -421,6 +663,7 @@ const comby = (() => {
     },
     brush: {
       label: 'Comby (hairbrush)',
+      voice: { pitch: 0.9, rate: 1.0, volume: 0.5, base: 430, type: 'sine' },
       joints: { armL: '69 122', armR: '91 122', legL: '74.5 156', legR: '85.5 156', eyeL: '64 72', eyeR: '96 72' },
       thinkArm: 160, // the arm swings up over the shoulder to reach the chin
       stride: 18,
@@ -509,6 +752,7 @@ const comby = (() => {
 
   const setMouth = (shape) => gsap.to(parts.mouth, { attr: { d: rig.mouth[shape] }, duration: 0.25, ease: 'power2.out' });
   const starEyes = (on) => {
+    if (on) sfx.sparkle();
     gsap.to(parts.sparkle, { opacity: on ? 1 : 0, duration: 0.2 });
     gsap.to(parts.pupils, { opacity: on ? 0 : 1, duration: 0.2 });
   };
@@ -555,9 +799,14 @@ const comby = (() => {
     },
   };
 
-  const api = { arrived: false };
+  const api = {
+    arrived: false,
+    get scene() {
+      return scene; // the section Comby is at or travelling to
+    },
+  };
   let entered = false;
-  let scene = 'hero';
+  let scene = null;
   let facing = 1;
   let look = null; // forced gaze (e.g. thinking); otherwise eyes follow the pointer
   let poseTl = null;
@@ -566,6 +815,9 @@ const comby = (() => {
   let bubbleTimer = null;
   let walkStopTimer = null;
   let featureProgress = 0;
+  let hinted = false;
+  let lastLine = '';
+  let lineBlocked = false;
   let current = 'comby';
   try {
     const saved = localStorage.getItem('comb-guide');
@@ -630,7 +882,8 @@ const comby = (() => {
       .to(parts.legR, { rotation: -a, duration: 0.16, ease: 'sine.inOut' }, '<')
       .to(hop, { y: 0, scaleY: 0.93, scaleX: 1.06, duration: 0.16, ease: 'power2.in' })
       .to(parts.legL, { rotation: -a, duration: 0.16, ease: 'sine.inOut' }, '<')
-      .to(parts.legR, { rotation: a, duration: 0.16, ease: 'sine.inOut' }, '<');
+      .to(parts.legR, { rotation: a, duration: 0.16, ease: 'sine.inOut' }, '<')
+      .call(() => sfx.step()); // footstep on every landing
   }
 
   function stopWalk() {
@@ -653,17 +906,31 @@ const comby = (() => {
 
   function say(text, ms = 4200) {
     clearTimeout(bubbleTimer);
+    lastLine = text;
     bubble.textContent = text;
+    const speaking = sfx.speak(text, rig.voice, () => {
+      clearTimeout(bubbleTimer);
+      bubbleTimer = setTimeout(hideBubble, 1200);
+    });
+    lineBlocked = speaking === 'blocked';
+    if (lineBlocked) {
+      const note = document.createElement('small');
+      note.className = 'comby-note';
+      note.textContent = 'Tap anywhere to hear me 🔊';
+      bubble.appendChild(note);
+    }
     gsap.fromTo(
       bubble,
       { opacity: 0, scale: 0.6, y: 10 },
       { opacity: 1, scale: 1, y: 0, duration: prefersReducedMotion ? 0 : 0.45, ease: 'back.out(2)', overwrite: true }
     );
-    bubbleTimer = setTimeout(hideBubble, ms);
+    // while speaking, the bubble stays until the line ends (with a safety cap)
+    bubbleTimer = setTimeout(hideBubble, speaking === true ? 15000 : speaking === 'blocked' ? ms + 2500 : ms);
   }
 
   function hideBubble() {
     clearTimeout(bubbleTimer);
+    sfx.stopSpeaking();
     gsap.to(bubble, { opacity: 0, scale: 0.85, duration: 0.2, overwrite: true });
   }
 
@@ -673,6 +940,10 @@ const comby = (() => {
     el.classList.toggle('bubble-left', a.bubble ? a.bubble === 'left' : a.fx > window.innerWidth * 0.55);
     poseTl = POSES[name]?.() || null;
     say(line);
+    if (name === 'hero' && !hinted) {
+      hinted = true;
+      sfx.hint();
+    }
   }
 
   function enter(name) {
@@ -687,6 +958,7 @@ const comby = (() => {
     gsap
       .timeline({ onComplete: () => arrive(name, a) })
       .from(el, { y: t.y - window.innerHeight * 0.6, duration: 0.7, ease: 'power3.in' })
+      .call(() => sfx.land())
       .to(hop, { scaleY: 0.82, scaleX: 1.14, duration: 0.12, ease: 'power2.out' })
       .to(hop, { scaleY: 1, scaleX: 1, duration: 0.5, ease: 'elastic.out(1.2, 0.4)' });
   }
@@ -753,20 +1025,38 @@ const comby = (() => {
     api.arrived = false;
     gsap
       .timeline()
+      .call(() => sfx.whoosh())
       .to(hop, { scale: 0, rotation: 200, duration: 0.3, ease: 'back.in(1.6)' })
       .add(() => useRig(name))
       .set(hop, { rotation: -160 })
+      .call(() => sfx.pop())
       .to(hop, { scale: 1, rotation: 0, duration: 0.6, ease: 'back.out(1.8)' })
       .add(() => arrive(scene, anchor(scene), rig.lines.hello));
   };
 
   guideButtons.forEach((b) => b.addEventListener('click', () => api.setCharacter(b.dataset.guideOption)));
 
+  sfx.onUnlock(() => {
+    if (sfx.on && lineBlocked && lastLine) say(lastLine);
+  });
+
+  document.querySelector('.sound-toggle').addEventListener('click', () => {
+    sfx.setOn(!sfx.on);
+    if (sfx.on && entered) say('Yay, now you can hear me! 🎶', 2600);
+    else if (!sfx.on) {
+      // muted mid-line: the bubble no longer waits for the voice
+      clearTimeout(bubbleTimer);
+      bubbleTimer = setTimeout(hideBubble, 1500);
+    }
+  });
+
   // click: a happy jump
   hit.addEventListener('click', () => {
     if (!api.arrived) return;
     say(rig.lines.click, 2200);
+    sfx.giggle();
     if (prefersReducedMotion) return;
+    sfx.hop();
     gsap
       .timeline()
       .to(hop, { y: -60, scaleY: 1.08, scaleX: 0.93, duration: 0.28, ease: 'power2.out' })
