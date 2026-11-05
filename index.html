@@ -78,6 +78,130 @@
       </div>
     </div>
 
+    <!-- Comby, the guide that hops to each section as you scroll, in two looks (comb and
+         hairbrush). Both share part classes (cb-arm-l, cb-leg-r, cb-eye, cb-mouth…) so one
+         controller can animate either; only the active one is shown. -->
+    <div class="comby" aria-live="polite">
+      <div class="comby-bubble" role="status"></div>
+      <div class="comby-hop">
+        <button class="comby-hit" type="button" aria-label="Your guide. Click to say hi." data-cursor="Boop!">
+          <svg class="comby-svg" data-guide="comby" viewBox="0 0 160 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="combyBody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" style="stop-color: var(--primary-2)" />
+                <stop offset="1" style="stop-color: var(--primary)" />
+              </linearGradient>
+            </defs>
+            <ellipse class="cb-shadow" cx="80" cy="195" rx="38" ry="5" />
+            <g class="cb-body">
+              <g class="cb-leg cb-leg-l">
+                <rect x="42" y="116" width="12" height="70" rx="6" />
+                <ellipse class="cb-foot" cx="45" cy="187" rx="12" ry="6" />
+              </g>
+              <g class="cb-leg cb-leg-r">
+                <rect x="106" y="116" width="12" height="70" rx="6" />
+                <ellipse class="cb-foot" cx="115" cy="187" rx="12" ry="6" />
+              </g>
+              <g class="cb-teeth">
+                <rect class="cb-tooth" x="60" y="114" width="7" height="44" rx="3.5" />
+                <rect class="cb-tooth" x="69.5" y="114" width="7" height="52" rx="3.5" />
+                <rect class="cb-tooth" x="79" y="114" width="7" height="48" rx="3.5" />
+                <rect class="cb-tooth" x="88.5" y="114" width="7" height="54" rx="3.5" />
+                <rect class="cb-tooth" x="98" y="114" width="7" height="42" rx="3.5" />
+              </g>
+              <g class="cb-arm cb-arm-l">
+                <path d="M30 92 Q16 102 12 120" />
+                <circle cx="12" cy="121" r="6.5" />
+              </g>
+              <g class="cb-arm cb-arm-r">
+                <path d="M130 92 Q144 102 148 120" />
+                <circle cx="148" cy="121" r="6.5" />
+              </g>
+              <path class="cb-tuft" d="M80 52 C74 34 94 26 93 41 C92 49 83 47 86 40" />
+              <rect class="cb-spine" x="20" y="50" width="120" height="72" rx="30" />
+              <rect class="cb-gloss" x="36" y="58" width="46" height="9" rx="4.5" />
+              <g class="cb-face">
+                <ellipse class="cb-cheek" cx="45" cy="101" rx="7" ry="4" />
+                <ellipse class="cb-cheek" cx="115" cy="101" rx="7" ry="4" />
+                <g class="cb-eye cb-eye-l">
+                  <ellipse class="cb-white" cx="61" cy="84" rx="11" ry="13" />
+                  <g class="cb-pupil"><circle cx="61" cy="86" r="6.5" /><circle class="cb-glint" cx="63.5" cy="83" r="2.2" /></g>
+                </g>
+                <g class="cb-eye cb-eye-r">
+                  <ellipse class="cb-white" cx="99" cy="84" rx="11" ry="13" />
+                  <g class="cb-pupil"><circle cx="99" cy="86" r="6.5" /><circle class="cb-glint" cx="101.5" cy="83" r="2.2" /></g>
+                </g>
+                <g class="cb-sparkle">
+                  <path d="M61 73 L63.6 81.4 L72 84 L63.6 86.6 L61 95 L58.4 86.6 L50 84 L58.4 81.4Z" />
+                  <path d="M99 73 L101.6 81.4 L110 84 L101.6 86.6 L99 95 L96.4 86.6 L88 84 L96.4 81.4Z" />
+                </g>
+                <path class="cb-mouth" d="M70 100 Q80 111 90 100" />
+              </g>
+            </g>
+          </svg>
+          <svg class="comby-svg" data-guide="brush" viewBox="0 0 160 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="brushHead" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" style="stop-color: var(--primary-2)" />
+                <stop offset="1" style="stop-color: var(--primary)" />
+              </linearGradient>
+            </defs>
+            <ellipse class="cb-shadow" cx="80" cy="195" rx="28" ry="5" />
+            <g class="cb-body">
+              <g class="cb-leg cb-leg-l">
+                <rect x="70" y="154" width="9" height="32" rx="4.5" />
+                <ellipse class="cb-foot" cx="72" cy="187" rx="10" ry="5.5" />
+              </g>
+              <g class="cb-leg cb-leg-r">
+                <rect x="81" y="154" width="9" height="32" rx="4.5" />
+                <ellipse class="cb-foot" cx="88" cy="187" rx="10" ry="5.5" />
+              </g>
+              <rect class="br-handle" x="67" y="104" width="26" height="56" rx="13" />
+              <rect class="br-band" x="67" y="138" width="26" height="6" />
+              <g class="br-bristles">
+                <g transform="rotate(-64 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+                <g transform="rotate(-48 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+                <g transform="rotate(-32 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+                <g transform="rotate(-16 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+                <g transform="rotate(0 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+                <g transform="rotate(16 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+                <g transform="rotate(32 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+                <g transform="rotate(48 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+                <g transform="rotate(64 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
+              </g>
+              <ellipse class="br-head" cx="80" cy="74" rx="46" ry="40" />
+              <ellipse class="br-gloss" cx="62" cy="50" rx="14" ry="6" transform="rotate(-20 62 50)" />
+              <g class="cb-arm cb-arm-l">
+                <path d="M69 122 Q57 130 52 146" />
+                <circle cx="52" cy="147" r="6" />
+              </g>
+              <g class="cb-arm cb-arm-r">
+                <path d="M91 122 Q103 130 108 146" />
+                <circle cx="108" cy="147" r="6" />
+              </g>
+              <g class="cb-face">
+                <ellipse class="cb-cheek" cx="54" cy="88" rx="7" ry="4" />
+                <ellipse class="cb-cheek" cx="106" cy="88" rx="7" ry="4" />
+                <g class="cb-eye cb-eye-l">
+                  <ellipse class="cb-white" cx="64" cy="72" rx="11" ry="12.5" />
+                  <g class="cb-pupil"><circle cx="64.5" cy="74" r="6.5" /><circle class="cb-glint" cx="67" cy="71" r="2.2" /></g>
+                </g>
+                <g class="cb-eye cb-eye-r">
+                  <ellipse class="cb-white" cx="96" cy="72" rx="11" ry="12.5" />
+                  <g class="cb-pupil"><circle cx="96.5" cy="74" r="6.5" /><circle class="cb-glint" cx="99" cy="71" r="2.2" /></g>
+                </g>
+                <g class="cb-sparkle">
+                  <path d="M64 62 L66.4 69.6 L74 72 L66.4 74.4 L64 82 L61.6 74.4 L54 72 L61.6 69.6Z" />
+                  <path d="M96 62 L98.4 69.6 L106 72 L98.4 74.4 L96 82 L93.6 74.4 L86 72 L93.6 69.6Z" />
+                </g>
+                <path class="cb-mouth" d="M71 91 Q80 100 89 91" />
+              </g>
+            </g>
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <header class="site-header">
       <div class="container nav-wrap">
         <a href="#top" class="brand" aria-label="COMB home" data-magnetic>
@@ -100,6 +224,23 @@
           <button class="swatch" data-theme-option="midnight" aria-label="Midnight theme" aria-pressed="false" style="--sw-a: #8a72ff; --sw-b: #79f0d5"></button>
         </div>
 
+        <div class="guide-switch" role="group" aria-label="Guide character">
+          <button class="guide-option" data-guide-option="comby" aria-label="Comby (comb)" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="11" rx="5" fill="currentColor" />
+              <circle cx="9" cy="8.5" r="1.8" style="fill: var(--bg)" /><circle cx="15" cy="8.5" r="1.8" style="fill: var(--bg)" />
+              <path d="M7 14v6M10.3 14v7M13.7 14v7M17 14v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button class="guide-option" data-guide-option="brush" aria-label="Comby (hairbrush)" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 6.5 3.6 4.6M8 4.8 7.2 2.6M12 4.2V1.8M16 4.8l.8-2.2M19 6.5l1.4-1.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <ellipse cx="12" cy="10" rx="7.5" ry="6" fill="currentColor" />
+              <rect x="10" y="15" width="4" height="7.5" rx="2" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
+
         <a href="#contact" class="button button-primary header-cta" data-magnetic>
           <span>Request a Demo</span>
         </a>
@@ -118,6 +259,25 @@
         <a href="#workflow"><span>Workflow</span></a>
         <a href="#contact"><span>Contact</span></a>
       </nav>
+      <div class="menu-guide">
+        <span>Your guide</span>
+        <div class="guide-switch" role="group" aria-label="Guide character">
+            <button class="guide-option" data-guide-option="comby" aria-label="Comby (comb)" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="11" rx="5" fill="currentColor" />
+                <circle cx="9" cy="8.5" r="1.8" style="fill: var(--bg)" /><circle cx="15" cy="8.5" r="1.8" style="fill: var(--bg)" />
+                <path d="M7 14v6M10.3 14v7M13.7 14v7M17 14v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </button>
+            <button class="guide-option" data-guide-option="brush" aria-label="Comby (hairbrush)" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 6.5 3.6 4.6M8 4.8 7.2 2.6M12 4.2V1.8M16 4.8l.8-2.2M19 6.5l1.4-1.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <ellipse cx="12" cy="10" rx="7.5" ry="6" fill="currentColor" />
+                <rect x="10" y="15" width="4" height="7.5" rx="2" fill="currentColor" />
+              </svg>
+            </button>
+        </div>
+      </div>
     </div>
 
     <main id="top" class="page-shell">

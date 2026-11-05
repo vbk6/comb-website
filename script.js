@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -126,94 +125,43 @@ function setCut(line, progress) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Themes: CSS handles the page, this table drives the 3D scene        */
+/* Themes: CSS handles the page, this table drives the WebGL particles */
 /* ------------------------------------------------------------------ */
-// palettes: [comb colour, scissor-handle colour] per section
 const THEMES = {
   rose: {
     bg: '#120b0d',
     primary: '#e58fa0',
     accent: '#f2c98a',
-    blade: '#efc3ad',
     stars: '#f6dcd2',
     light: false,
-    palettes: {
-      hero: ['#e58fa0', '#f2c98a'],
-      why: ['#f4b8c2', '#e8b37a'],
-      product: ['#d8738a', '#f6dcb4'],
-      features: ['#f2c98a', '#e58fa0'],
-      ai: ['#c9607a', '#f2c98a'],
-      workflow: ['#e58fa0', '#f6dcb4'],
-      cta: ['#e58fa0', '#f2c98a'],
-    },
   },
   sage: {
     bg: '#0b1210',
     primary: '#8fcfa8',
     accent: '#f0a27a',
-    blade: '#e6ece6',
     stars: '#dcefe2',
     light: false,
-    palettes: {
-      hero: ['#8fcfa8', '#f0a27a'],
-      why: ['#b9e3c6', '#e8b48f'],
-      product: ['#6fbf9a', '#f6d2b8'],
-      features: ['#f0a27a', '#8fcfa8'],
-      ai: ['#5fae8a', '#f0a27a'],
-      workflow: ['#8fcfa8', '#f6d2b8'],
-      cta: ['#8fcfa8', '#f0a27a'],
-    },
   },
   blush: {
     bg: '#faf3ee',
     primary: '#d6587e',
     accent: '#b8864b',
-    blade: '#e2b19b',
     stars: '#d6587e',
     light: true,
-    palettes: {
-      hero: ['#d6587e', '#c9a46a'],
-      why: ['#e88aa6', '#c9a46a'],
-      product: ['#c0446a', '#e0c08f'],
-      features: ['#c9a46a', '#d6587e'],
-      ai: ['#b23a60', '#c9a46a'],
-      workflow: ['#d6587e', '#e0c08f'],
-      cta: ['#d6587e', '#c9a46a'],
-    },
   },
   candy: {
     bg: '#fff8fc',
     primary: '#ff2e88',
     accent: '#00a9b8',
-    blade: '#d9dee6',
     stars: '#ff2e88',
     light: true,
-    palettes: {
-      hero: ['#ff2e88', '#00c2d1'],
-      why: ['#ff7ab5', '#ffb100'],
-      product: ['#e0156f', '#00c2d1'],
-      features: ['#00c2d1', '#ff2e88'],
-      ai: ['#9b3cff', '#ffb100'],
-      workflow: ['#ff2e88', '#ffb100'],
-      cta: ['#ff2e88', '#00c2d1'],
-    },
   },
   midnight: {
     bg: '#050b18',
     primary: '#8a72ff',
     accent: '#79f0d5',
-    blade: '#e8eef7',
     stars: '#bfccff',
     light: false,
-    palettes: {
-      hero: ['#8a72ff', '#79f0d5'],
-      why: ['#3d8bff', '#b39cff'],
-      product: ['#6f8bff', '#9ae8ff'],
-      features: ['#2fcfb0', '#b39cff'],
-      ai: ['#b06cff', '#79f0d5'],
-      workflow: ['#6f8bff', '#79f0d5'],
-      cta: ['#8a72ff', '#79f0d5'],
-    },
   },
 };
 
@@ -222,104 +170,9 @@ const theme = () => THEMES[themeName];
 let currentScene = 'hero';
 
 /* ------------------------------------------------------------------ */
-/* WebGL: 3D comb + snipping scissors + hair clippings                 */
+/* WebGL: star field + falling hair clippings                          */
 /* ------------------------------------------------------------------ */
-function createCombGeometry() {
-  const W = 4.2;
-  const spineH = 0.55;
-  const toothL = 1.15;
-  const s = new THREE.Shape();
-
-  s.moveTo(-W / 2, 0);
-  s.lineTo(-W / 2, spineH * 0.5);
-  s.quadraticCurveTo(-W / 2, spineH, -W / 2 + 0.3, spineH);
-  s.lineTo(W / 2 - 0.3, spineH);
-  s.quadraticCurveTo(W / 2, spineH, W / 2, spineH * 0.5);
-  s.lineTo(W / 2, -toothL - 0.05);
-  s.lineTo(W / 2 - 0.14, -toothL - 0.05);
-
-  // teeth, right to left: fine half then wide half, like a real styling comb
-  let x = W / 2 - 0.14;
-  s.lineTo(x, 0);
-  while (x > -W / 2 + 0.34) {
-    const fine = x > 0;
-    const gap = fine ? 0.07 : 0.11;
-    const tw = fine ? 0.06 : 0.09;
-    x -= gap;
-    s.lineTo(x, 0);
-    s.lineTo(x, -toothL + 0.04);
-    s.quadraticCurveTo(x - tw / 2, -toothL - 0.02, x - tw, -toothL + 0.04);
-    x -= tw;
-    s.lineTo(x, 0);
-  }
-  s.lineTo(-W / 2 + 0.14, 0);
-  s.lineTo(-W / 2 + 0.14, -toothL - 0.05);
-  s.lineTo(-W / 2, -toothL - 0.05);
-  s.lineTo(-W / 2, 0);
-
-  const geo = new THREE.ExtrudeGeometry(s, {
-    depth: 0.1,
-    bevelEnabled: true,
-    bevelThickness: 0.03,
-    bevelSize: 0.014,
-    bevelSegments: 3,
-    curveSegments: 6,
-  });
-  geo.center();
-  return geo;
-}
-
-function createScissors(bladeMat, handleMat) {
-  const bladeShape = new THREE.Shape();
-  bladeShape.moveTo(-0.2, 0.14);
-  bladeShape.quadraticCurveTo(1.6, 0.2, 3.0, 0.0);
-  bladeShape.quadraticCurveTo(1.6, -0.02, -0.2, -0.1);
-  bladeShape.quadraticCurveTo(-0.34, 0.02, -0.2, 0.14);
-  const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, {
-    depth: 0.05,
-    bevelEnabled: true,
-    bevelThickness: 0.02,
-    bevelSize: 0.02,
-    bevelSegments: 3,
-    curveSegments: 16,
-  });
-
-  const shankLen = 0.95;
-  const shankAngle = Math.atan2(-0.45, -0.9);
-  const shankGeo = new THREE.CapsuleGeometry(0.075, shankLen, 6, 12);
-  shankGeo.rotateZ(Math.PI / 2);
-  const ringGeo = new THREE.TorusGeometry(0.4, 0.09, 18, 56);
-
-  const makeBlade = (zOffset) => {
-    const g = new THREE.Group();
-    const blade = new THREE.Mesh(bladeGeo, bladeMat);
-    blade.position.z = zOffset;
-    const shank = new THREE.Mesh(shankGeo, handleMat);
-    shank.rotation.z = shankAngle;
-    shank.position.set(-0.45, -0.22, zOffset + 0.03);
-    const ring = new THREE.Mesh(ringGeo, handleMat);
-    ring.position.set(-1.22, -0.7, zOffset + 0.03);
-    g.add(blade, shank, ring);
-    return g;
-  };
-
-  const bladeA = makeBlade(0.04);
-  const bladeB = makeBlade(-0.12);
-  bladeB.scale.y = -1;
-
-  const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.32, 24), bladeMat);
-  screw.rotation.x = Math.PI / 2;
-
-  const pivot = new THREE.Group();
-  pivot.add(bladeA, bladeB, screw);
-  pivot.position.x = -0.65; // centre the whole tool around its middle
-
-  const root = new THREE.Group();
-  root.add(pivot);
-  return { root, bladeA, bladeB };
-}
-
-const scene3d = { state: null, ready: false };
+const scene3d = { ready: false };
 
 function initWebGL() {
   const canvas = document.querySelector('.webgl');
@@ -334,51 +187,13 @@ function initWebGL() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(theme().bg, 1);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
 
   const scene = new THREE.Scene();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
 
   const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 0, 9);
 
-  // brand-tinted rim lights
-  const rimA = new THREE.PointLight(theme().primary, 30, 20);
-  rimA.position.set(-4, 3, 3);
-  const rimB = new THREE.PointLight(theme().accent, 24, 20);
-  rimB.position.set(4, -3, 3);
-  scene.add(rimA, rimB, new THREE.AmbientLight(0xffffff, 0.15));
-
   const isMobile = window.innerWidth < 900;
-
-  const combMat = new THREE.MeshPhysicalMaterial({
-    color: theme().palettes.hero[0],
-    roughness: 0.16,
-    metalness: 0.05,
-    clearcoat: 1,
-    clearcoatRoughness: 0.06,
-    iridescence: 1,
-    iridescenceIOR: 1.5,
-    iridescenceThicknessRange: [180, 700],
-  });
-  const bladeMat = new THREE.MeshPhysicalMaterial({ color: theme().blade, metalness: 1, roughness: 0.14, clearcoat: 0.6 });
-  const handleMat = new THREE.MeshPhysicalMaterial({
-    color: theme().palettes.hero[1],
-    roughness: 0.2,
-    clearcoat: 1,
-    clearcoatRoughness: 0.1,
-    iridescence: 0.6,
-  });
-
-  const comb = new THREE.Mesh(createCombGeometry(), combMat);
-  const combGroup = new THREE.Group();
-  combGroup.add(comb);
-  scene.add(combGroup);
-
-  const scissors = createScissors(bladeMat, handleMat);
-  scene.add(scissors.root);
 
   // soft star field for depth
   const starCount = isMobile ? 400 : 900;
@@ -479,19 +294,12 @@ function initWebGL() {
   );
   scene.add(clippings);
 
-  const state = { ...sceneTargets('hero'), spin: 0 };
-  const snip = { angle: 0.42 };
-  scene3d.state = state;
-  scene3d.materials = { combMat, handleMat };
   scene3d.ready = true;
 
   // swap scene colours instantly (the page itself is revealed by the view transition)
   scene3d.applyTheme = () => {
     const t = theme();
     renderer.setClearColor(t.bg, 1);
-    rimA.color.set(t.primary);
-    rimB.color.set(t.accent);
-    bladeMat.color.set(t.blade);
     uniforms.uStar.value.set(t.stars);
     uniforms.uClipA.value.set(t.primary);
     uniforms.uClipB.value.set(t.accent);
@@ -500,21 +308,8 @@ function initWebGL() {
       mat.blending = t.light ? THREE.NormalBlending : THREE.AdditiveBlending;
       mat.needsUpdate = true;
     });
-    const [combHex, handleHex] = t.palettes[currentScene];
-    gsap.killTweensOf([combMat.color, handleMat.color]);
-    combMat.color.set(combHex);
-    handleMat.color.set(handleHex);
     render();
   };
-
-  // idle double-snip, then pause
-  const snipLoop = gsap.timeline({ repeat: -1, repeatDelay: 1.6 });
-  snipLoop
-    .to(snip, { angle: 0.02, duration: 0.16, ease: 'power3.in' })
-    .to(snip, { angle: 0.42, duration: 0.28, ease: 'power2.out' })
-    .to(snip, { angle: 0.02, duration: 0.16, ease: 'power3.in' })
-    .to(snip, { angle: 0.42, duration: 0.4, ease: 'power2.out' });
-  if (prefersReducedMotion) snipLoop.pause();
 
   const clock = new THREE.Clock();
   const rot = { x: 0, y: 0 };
@@ -528,28 +323,8 @@ function initWebGL() {
     last = t;
     uniforms.uTime.value = t;
 
-    const v = lenis ? lenis.velocity : 0;
-    snipLoop.timeScale(1 + Math.min(Math.abs(v) * 0.08, 3));
-
     rot.x = lerp(rot.x, pointer.ny * 0.35, 0.04);
     rot.y = lerp(rot.y, pointer.nx * 0.5, 0.04);
-
-    combGroup.position.x = lerp(combGroup.position.x, state.cx + pointer.nx * 0.12, 0.06);
-    combGroup.position.y = lerp(combGroup.position.y, state.cy + pointer.ny * 0.12 + Math.sin(t * 0.8) * 0.08, 0.06);
-    combGroup.scale.setScalar(lerp(combGroup.scale.x, state.cs, 0.06));
-    combGroup.rotation.z = lerp(combGroup.rotation.z, state.crz, 0.06) + Math.sin(t * 0.6) * 0.002;
-    comb.rotation.x = rot.x * 0.6 + Math.sin(t * 0.5) * 0.18;
-    comb.rotation.y = rot.y * 0.8 + state.spin + v * 0.004;
-
-    const s = scissors.root;
-    s.position.x = lerp(s.position.x, state.sx - pointer.nx * 0.15, 0.06);
-    s.position.y = lerp(s.position.y, state.sy - pointer.ny * 0.12 + Math.sin(t * 0.9 + 1) * 0.1, 0.06);
-    s.scale.setScalar(lerp(s.scale.x, state.ss, 0.06));
-    s.rotation.z = lerp(s.rotation.z, state.srz, 0.06);
-    s.rotation.x = -rot.x * 0.5 + Math.sin(t * 0.7) * 0.12;
-    s.rotation.y = rot.y * 0.6 + Math.sin(t * 0.4) * 0.2;
-    scissors.bladeA.rotation.z = snip.angle;
-    scissors.bladeB.rotation.z = -snip.angle;
 
     stars.rotation.y = t * 0.015 + rot.y * 0.15;
     clippings.rotation.y = rot.y * 0.1;
@@ -562,13 +337,6 @@ function initWebGL() {
   }
 
   if (prefersReducedMotion) {
-    // snap to targets and draw once
-    combGroup.position.set(state.cx, state.cy, 0);
-    combGroup.scale.setScalar(state.cs);
-    combGroup.rotation.z = state.crz;
-    scissors.root.position.set(state.sx, state.sy, 0);
-    scissors.root.scale.setScalar(state.ss);
-    scissors.root.rotation.z = state.srz;
     render();
   } else {
     gsap.ticker.add(render);
@@ -582,55 +350,12 @@ function initWebGL() {
   });
 }
 
-/* ------------------------------------------------------------------ */
-/* Scene states per section (tools move + recolour as you scroll)      */
-/* ------------------------------------------------------------------ */
-
-// c* = comb, s* = scissors: position, scale, z-rotation
-function sceneTargets(name) {
-  const m = window.innerWidth < 900;
-  const map = m
-    ? {
-        hero: { cx: 1.05, cy: 2.5, cs: 0.34, crz: -0.35, sx: 0.85, sy: 1.95, ss: 0.28, srz: 0.5 },
-        why: { cx: 1.2, cy: 2.3, cs: 0.32, crz: 0.4, sx: -1.2, sy: -2.3, ss: 0.3, srz: -2.6 },
-        product: { cx: -0.9, cy: 2.2, cs: 0.32, crz: 1.1, sx: 0.9, sy: -2.2, ss: 0.32, srz: 2.8 },
-        features: { cx: 1.1, cy: 2.3, cs: 0.3, crz: -0.2, sx: -1.1, sy: -2.4, ss: 0.28, srz: 0.3 },
-        ai: { cx: -1.1, cy: -2.3, cs: 0.32, crz: 0.6, sx: 1.1, sy: 2.3, ss: 0.3, srz: -2.4 },
-        workflow: { cx: 1.1, cy: 2.2, cs: 0.32, crz: -1.3, sx: 1.0, sy: -2.3, ss: 0.3, srz: 0.9 },
-        cta: { cx: -0.7, cy: -1.9, cs: 0.4, crz: 0.5, sx: 0.7, sy: 2.0, ss: 0.36, srz: -2.6 },
-      }
-    : {
-        hero: { cx: 2.5, cy: 0.6, cs: 0.95, crz: -0.55, sx: 2.3, sy: -1.1, ss: 0.75, srz: 0.5 },
-        why: { cx: -3.7, cy: 1.9, cs: 0.5, crz: 0.35, sx: 3.8, sy: -2.1, ss: 0.45, srz: -2.6 },
-        product: { cx: -3.5, cy: 1.2, cs: 0.6, crz: 1.2, sx: 3.6, sy: -1.3, ss: 0.6, srz: 2.8 },
-        features: { cx: 3.4, cy: 2.1, cs: 0.45, crz: -0.2, sx: 1.7, sy: 2.2, ss: 0.4, srz: 0.3 },
-        ai: { cx: -3.9, cy: -2.2, cs: 0.55, crz: 0.6, sx: 3.9, sy: 2.3, ss: 0.5, srz: -2.4 },
-        workflow: { cx: 3.2, cy: 0.8, cs: 0.7, crz: -1.3, sx: 3.1, sy: -1.6, ss: 0.55, srz: 0.9 },
-        cta: { cx: -3.0, cy: -1.3, cs: 0.75, crz: 0.5, sx: 3.0, sy: 1.4, ss: 0.7, srz: -2.6 },
-      };
-  return map[name];
-}
-
 initWebGL();
 
 function goToScene(name) {
+  if (name === currentScene && comby.arrived) return;
   currentScene = name;
-  if (!scene3d.ready) return;
-  const state = scene3d.state;
-  gsap.to(state, { ...sceneTargets(name), duration: 1.6, ease: 'power3.inOut', overwrite: 'auto' });
-  // a full turn of the comb on every scene change, always landing face-on
-  const turn = Math.PI * 2;
-  gsap.to(state, { spin: (Math.round(state.spin / turn) + 1) * turn, duration: 1.8, ease: 'power3.inOut', overwrite: 'auto' });
-
-  const [combHex, handleHex] = theme().palettes[name];
-  const { combMat, handleMat } = scene3d.materials;
-  [
-    [combMat.color, combHex],
-    [handleMat.color, handleHex],
-  ].forEach(([color, hex]) => {
-    const target = new THREE.Color(hex);
-    gsap.to(color, { r: target.r, g: target.g, b: target.b, duration: 1.6, ease: 'power2.inOut', overwrite: 'auto' });
-  });
+  comby.goTo(name);
 }
 
 // Created after the pinned sections so their positions include pin spacing.
@@ -646,6 +371,454 @@ function setupSceneTriggers() {
     });
   });
 }
+
+/* ------------------------------------------------------------------ */
+/* Comby, the guide that hops to each section, in two looks (comb and  */
+/* hairbrush). Both SVGs share part classes, so one controller drives  */
+/* either; each rig only adds its joints, mouth shapes, lines and      */
+/* little extras.                                                      */
+/* ------------------------------------------------------------------ */
+const comby = (() => {
+  const el = document.querySelector('.comby');
+  const hop = el.querySelector('.comby-hop');
+  const hit = el.querySelector('.comby-hit');
+  const bubble = el.querySelector('.comby-bubble');
+  const guideButtons = document.querySelectorAll('[data-guide-option]');
+
+  const RIGS = {
+    comby: {
+      label: 'Comby (comb)',
+      joints: { armL: '30 92', armR: '130 92', legL: '48 118', legR: '112 118', eyeL: '61 84', eyeR: '99 84' },
+      thinkArm: -100,
+      stride: 22,
+      eyeY: 0.42,
+      look: 3.5,
+      mouth: {
+        smile: 'M70 100 Q80 111 90 100',
+        grin: 'M66 98 Q80 119 94 98',
+        think: 'M72 104 Q80 101 88 104',
+        ooh: 'M75 102 Q80 109 85 102',
+      },
+      lines: {
+        hello: "Hi, I'm Comby! 👋",
+        hero: "Hi, I'm Comby! 👋 Let me show you around.",
+        why: 'Hmm… less admin, more calm. I like that.',
+        product: "Here's your whole salon day at a glance!",
+        features: 'Everything your salon needs. Follow me!',
+        ai: 'Psst… meet my smart friends, Bay and COMB Studio!',
+        workflow: 'Book, know, run, grow. Step by step.',
+        cta: "Let's talk! Book your demo 🎉",
+        click: 'Hehe, that tickles! 😄',
+      },
+      // swaying teeth and a bouncy curl
+      idle: (svg) => {
+        gsap.set(svg.querySelectorAll('.cb-tooth'), { transformOrigin: '50% 0%' });
+        gsap.set(svg.querySelector('.cb-tuft'), { svgOrigin: '80 52' });
+        gsap.to(svg.querySelectorAll('.cb-tooth'), { rotation: 6, duration: 0.9, ease: 'sine.inOut', yoyo: true, repeat: -1, stagger: { each: 0.12, from: 'center' } });
+        gsap.to(svg.querySelector('.cb-tuft'), { rotation: 12, duration: 0.7, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+      },
+      flourish: () => gsap.timeline(),
+    },
+    brush: {
+      label: 'Comby (hairbrush)',
+      joints: { armL: '69 122', armR: '91 122', legL: '74.5 156', legR: '85.5 156', eyeL: '64 72', eyeR: '96 72' },
+      thinkArm: 160, // the arm swings up over the shoulder to reach the chin
+      stride: 18,
+      eyeY: 0.36,
+      look: 4,
+      mouth: {
+        smile: 'M71 91 Q80 100 89 91',
+        grin: 'M68 90 Q80 106 92 90',
+        think: 'M73 95 Q80 93 87 95',
+        ooh: 'M76 93 Q80 99 84 93',
+      },
+      lines: {
+        hello: "Hi, I'm Comby! ✨",
+        hero: "Hi, I'm Comby! ✨ Let's smooth things out.",
+        why: 'No more tangles in your day. Ahh, calm.',
+        product: 'Smooth numbers, smooth day!',
+        features: 'Brush up on every feature. This way!',
+        ai: 'Bay and COMB Studio? Brilliant brains!',
+        workflow: 'Book, know, run, grow. Nice and smooth.',
+        cta: "Let's make your salon shine! Book a demo ✨",
+        click: 'Ooh, that tickles my bristles! 😄',
+      },
+      // bristles sway like hair in a breeze
+      idle: (svg) => {
+        const bristles = svg.querySelectorAll('.br-bristle');
+        gsap.set(bristles, { svgOrigin: '80 44' });
+        gsap.to(bristles, { rotation: 7, duration: 1, ease: 'sine.inOut', yoyo: true, repeat: -1, stagger: { each: 0.1, from: 'center' } });
+      },
+      // excited: bristles stand on end
+      flourish: () =>
+        gsap.to(svg.querySelectorAll('.br-bristle line, .br-bristle circle'), {
+          scaleY: 1.35,
+          svgOrigin: '80 44',
+          duration: 0.14,
+          yoyo: true,
+          repeat: 3,
+          ease: 'power2.out',
+          stagger: 0.02,
+        }),
+    },
+  };
+
+  // parts of the active look, filled in by useRig()
+  let rig = null;
+  let svg = null;
+  const parts = {};
+
+  function useRig(name) {
+    rig = RIGS[name];
+    svg = el.querySelector(`.comby-svg[data-guide="${name}"]`);
+    el.querySelectorAll('.comby-svg').forEach((s) => s.classList.toggle('is-active', s === svg));
+    const q = (sel) => svg.querySelector(sel);
+    Object.assign(parts, {
+      armL: q('.cb-arm-l'),
+      armR: q('.cb-arm-r'),
+      legL: q('.cb-leg-l'),
+      legR: q('.cb-leg-r'),
+      body: q('.cb-body'),
+      mouth: q('.cb-mouth'),
+      sparkle: q('.cb-sparkle'),
+      eyes: svg.querySelectorAll('.cb-eye'),
+      pupils: svg.querySelectorAll('.cb-pupil'),
+    });
+    hit.setAttribute('aria-label', `${rig.label}, your guide. Click to say hi.`);
+    guideButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.guideOption === name)));
+    gsap.set(svg, { scaleX: facing });
+  }
+
+  // one-time setup for every rig: joints (GSAP ignores CSS transform-origin on SVG) and idle life
+  Object.entries(RIGS).forEach(([name, r]) => {
+    const s = el.querySelector(`.comby-svg[data-guide="${name}"]`);
+    const j = r.joints;
+    gsap.set(s.querySelector('.cb-arm-l'), { svgOrigin: j.armL });
+    gsap.set(s.querySelector('.cb-arm-r'), { svgOrigin: j.armR });
+    gsap.set(s.querySelector('.cb-leg-l'), { svgOrigin: j.legL });
+    gsap.set(s.querySelector('.cb-leg-r'), { svgOrigin: j.legR });
+    gsap.set(s.querySelector('.cb-body'), { svgOrigin: '80 190' });
+    const [eyeL, eyeR] = s.querySelectorAll('.cb-eye');
+    gsap.set(eyeL, { svgOrigin: j.eyeL });
+    gsap.set(eyeR, { svgOrigin: j.eyeR });
+    if (!prefersReducedMotion) {
+      gsap.to(s.querySelector('.cb-body'), { y: -3, duration: 1.3, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+      r.idle(s);
+    }
+  });
+
+  const setMouth = (shape) => gsap.to(parts.mouth, { attr: { d: rig.mouth[shape] }, duration: 0.25, ease: 'power2.out' });
+  const starEyes = (on) => {
+    gsap.to(parts.sparkle, { opacity: on ? 1 : 0, duration: 0.2 });
+    gsap.to(parts.pupils, { opacity: on ? 0 : 1, duration: 0.2 });
+  };
+
+  // arm angles: right arm points up at about -110, left arm up at about +110
+  const POSES = {
+    hero: () =>
+      gsap
+        .timeline()
+        .to(parts.armR, { rotation: -125, duration: 0.3, ease: 'back.out(2)' })
+        .add(rig.flourish(), '<')
+        .to(parts.armR, { rotation: -95, duration: 0.2, yoyo: true, repeat: 5, ease: 'sine.inOut' })
+        .to(parts.armR, { rotation: 0, duration: 0.4, ease: 'power2.inOut' }),
+    why: () => {
+      look = { x: 1.5, y: -3.5 };
+      setMouth('think');
+      return gsap.timeline().to(parts.armL, { rotation: rig.thinkArm, duration: 0.45, ease: 'back.out(1.6)' });
+    },
+    product: () =>
+      gsap
+        .timeline()
+        .to(parts.armR, { rotation: -60, duration: 0.35, ease: 'back.out(2)' })
+        .to(parts.armR, { rotation: -48, duration: 0.25, yoyo: true, repeat: 3, ease: 'sine.inOut' }),
+    features: () => gsap.timeline(),
+    ai: () => {
+      setMouth('ooh');
+      starEyes(true);
+      return gsap
+        .timeline()
+        .to(parts.armL, { rotation: 140, duration: 0.35, ease: 'back.out(2)' })
+        .to(parts.armR, { rotation: -140, duration: 0.35, ease: 'back.out(2)' }, '<')
+        .add(() => setMouth('grin'), '+=0.6');
+    },
+    workflow: () => gsap.timeline().to(parts.armR, { rotation: -70, duration: 0.35, ease: 'back.out(2)' }),
+    cta: () => {
+      setMouth('grin');
+      starEyes(true);
+      return gsap
+        .timeline()
+        .to(parts.armL, { rotation: 135, duration: 0.3, ease: 'back.out(2)' })
+        .to(parts.armR, { rotation: -135, duration: 0.3, ease: 'back.out(2)' }, '<')
+        .to(hop, { y: -34, scaleY: 1.06, scaleX: 0.95, duration: 0.22, ease: 'power2.out', yoyo: true, repeat: 5 }, '<')
+        .add(rig.flourish(), '<');
+    },
+  };
+
+  const api = { arrived: false };
+  let entered = false;
+  let scene = 'hero';
+  let facing = 1;
+  let look = null; // forced gaze (e.g. thinking); otherwise eyes follow the pointer
+  let poseTl = null;
+  let walkTl = null;
+  let moveTween = null;
+  let bubbleTimer = null;
+  let walkStopTimer = null;
+  let featureProgress = 0;
+  let current = 'comby';
+  try {
+    const saved = localStorage.getItem('comb-guide');
+    if (RIGS[saved]) current = saved;
+  } catch (e) {}
+  useRig(current);
+
+  const isMobile = () => window.innerWidth < 900;
+
+  // where the guide's feet go in each section, in viewport px (sections that stay pinned
+  // or fixed while scrolling are measured from the page so the guide lines up with them)
+  function anchor(name) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    if (isMobile()) {
+      const corner = { fx: vw - 50, fy: vh - 12, face: -1 };
+      return name === 'ai' ? { ...corner, fy: vh + 34 } : corner;
+    }
+    switch (name) {
+      case 'hero':
+        return { fx: vw * 0.83, fy: vh * 0.62, face: -1, scale: 1.3 }; // the open space above the buttons
+      case 'why':
+        return { fx: vw * 0.13, fy: vh * 0.92, face: 1 };
+      case 'product': {
+        const w = document.querySelector('.window-shell')?.offsetWidth || 680;
+        return { fx: Math.max(90, vw / 2 - w / 2 - 110), fy: vh * 0.8, face: 1 };
+      }
+      case 'features': {
+        const bar = document.querySelector('.features-progress .progress-bar')?.getBoundingClientRect();
+        if (!bar || !bar.width) return { fx: vw * 0.85, fy: vh * 0.92, face: -1 };
+        return { fx: bar.left + 50 + featureProgress * (bar.width - 100), fy: bar.top - 4, face: 1 };
+      }
+      case 'ai':
+        return { fx: vw - 120, fy: vh + 78, face: -1 }; // peeking up from the bottom edge
+      case 'workflow': {
+        const line = document.querySelector('.flow-line')?.getBoundingClientRect();
+        const fx = line ? line.left - 120 : vw * 0.15;
+        return { fx: Math.max(80, fx), fy: vh * 0.6 + 82, face: 1 };
+      }
+      case 'cta':
+        return { fx: Math.min(vw - 90, vw / 2 + 240), fy: vh * 0.88, face: -1, bubble: 'right' };
+      default:
+        return { fx: vw * 0.85, fy: vh * 0.9, face: -1 };
+    }
+  }
+
+  const target = (a) => ({ x: a.fx - el.offsetWidth / 2, y: a.fy - el.offsetHeight, scale: a.scale || 1 });
+
+  function setFacing(dir) {
+    if (!dir || dir === facing) return;
+    facing = dir;
+    gsap.to(svg, { scaleX: dir, duration: 0.25, ease: 'power2.out' });
+  }
+
+  function startWalk() {
+    if (walkTl || prefersReducedMotion) return;
+    const a = rig.stride;
+    walkTl = gsap
+      .timeline({ repeat: -1 })
+      .to(hop, { y: -20, scaleY: 1.05, scaleX: 0.96, duration: 0.16, ease: 'power2.out' })
+      .to(parts.legL, { rotation: a, duration: 0.16, ease: 'sine.inOut' }, '<')
+      .to(parts.legR, { rotation: -a, duration: 0.16, ease: 'sine.inOut' }, '<')
+      .to(hop, { y: 0, scaleY: 0.93, scaleX: 1.06, duration: 0.16, ease: 'power2.in' })
+      .to(parts.legL, { rotation: -a, duration: 0.16, ease: 'sine.inOut' }, '<')
+      .to(parts.legR, { rotation: a, duration: 0.16, ease: 'sine.inOut' }, '<');
+  }
+
+  function stopWalk() {
+    if (!walkTl) return;
+    walkTl.kill();
+    walkTl = null;
+    gsap.to(hop, { y: 0, scaleX: 1, scaleY: 1, duration: 0.3, ease: 'back.out(3)' });
+    gsap.to([parts.legL, parts.legR], { rotation: 0, duration: 0.25 });
+  }
+
+  function resetPose() {
+    poseTl?.kill();
+    poseTl = null;
+    look = null;
+    gsap.killTweensOf([parts.armL, parts.armR]);
+    gsap.to([parts.armL, parts.armR, parts.legL, parts.legR], { rotation: 0, duration: 0.3, ease: 'power2.out' });
+    starEyes(false);
+    setMouth('smile');
+  }
+
+  function say(text, ms = 4200) {
+    clearTimeout(bubbleTimer);
+    bubble.textContent = text;
+    gsap.fromTo(
+      bubble,
+      { opacity: 0, scale: 0.6, y: 10 },
+      { opacity: 1, scale: 1, y: 0, duration: prefersReducedMotion ? 0 : 0.45, ease: 'back.out(2)', overwrite: true }
+    );
+    bubbleTimer = setTimeout(hideBubble, ms);
+  }
+
+  function hideBubble() {
+    clearTimeout(bubbleTimer);
+    gsap.to(bubble, { opacity: 0, scale: 0.85, duration: 0.2, overwrite: true });
+  }
+
+  function arrive(name, a, line = rig.lines[name]) {
+    api.arrived = true;
+    setFacing(a.face);
+    el.classList.toggle('bubble-left', a.bubble ? a.bubble === 'left' : a.fx > window.innerWidth * 0.55);
+    poseTl = POSES[name]?.() || null;
+    say(line);
+  }
+
+  function enter(name) {
+    entered = true;
+    scene = name;
+    const a = anchor(name);
+    const t = target(a);
+    setFacing(a.face);
+    gsap.set(el, { x: t.x, y: t.y, scale: t.scale, opacity: 1 });
+    if (prefersReducedMotion) return arrive(name, a);
+    // drop in from above with a squashy landing
+    gsap
+      .timeline({ onComplete: () => arrive(name, a) })
+      .from(el, { y: t.y - window.innerHeight * 0.6, duration: 0.7, ease: 'power3.in' })
+      .to(hop, { scaleY: 0.82, scaleX: 1.14, duration: 0.12, ease: 'power2.out' })
+      .to(hop, { scaleY: 1, scaleX: 1, duration: 0.5, ease: 'elastic.out(1.2, 0.4)' });
+  }
+
+  api.goTo = (name) => {
+    if (!entered) return enter(name);
+    scene = name;
+    api.arrived = false;
+    hideBubble();
+    resetPose();
+    moveTween?.kill();
+
+    const a = anchor(name);
+    const t = target(a);
+    if (prefersReducedMotion) {
+      gsap.set(el, t);
+      return arrive(name, a);
+    }
+
+    const dx = t.x - gsap.getProperty(el, 'x');
+    const dy = t.y - gsap.getProperty(el, 'y');
+    if (Math.abs(dx) > 20) setFacing(Math.sign(dx));
+    startWalk();
+    moveTween = gsap.to(el, {
+      ...t,
+      duration: gsap.utils.clamp(0.7, 1.8, Math.hypot(dx, dy) / 650),
+      ease: 'power2.inOut',
+      onComplete: () => {
+        stopWalk();
+        arrive(name, a);
+      },
+    });
+  };
+
+  // features: walk along the progress bar as the cards scroll sideways
+  api.follow = (progress) => {
+    featureProgress = progress;
+    if (scene !== 'features' || !api.arrived || isMobile()) return;
+    const t = target(anchor('features'));
+    const dx = t.x - gsap.getProperty(el, 'x');
+    if (Math.abs(dx) < 1) return;
+    setFacing(Math.sign(dx));
+    startWalk();
+    gsap.to(el, { x: t.x, y: t.y, duration: 0.35, ease: 'power2.out', overwrite: 'auto' });
+    clearTimeout(walkStopTimer);
+    walkStopTimer = setTimeout(stopWalk, 200);
+  };
+
+  // swap characters: the current one spins away, the new one pops in on the same spot
+  api.setCharacter = (name) => {
+    if (!RIGS[name] || name === current) return;
+    current = name;
+    try {
+      localStorage.setItem('comb-guide', name);
+    } catch (e) {}
+    if (!entered || prefersReducedMotion) {
+      useRig(name);
+      if (entered) say(rig.lines.hello, 2400);
+      return;
+    }
+    hideBubble();
+    stopWalk();
+    resetPose();
+    api.arrived = false;
+    gsap
+      .timeline()
+      .to(hop, { scale: 0, rotation: 200, duration: 0.3, ease: 'back.in(1.6)' })
+      .add(() => useRig(name))
+      .set(hop, { rotation: -160 })
+      .to(hop, { scale: 1, rotation: 0, duration: 0.6, ease: 'back.out(1.8)' })
+      .add(() => arrive(scene, anchor(scene), rig.lines.hello));
+  };
+
+  guideButtons.forEach((b) => b.addEventListener('click', () => api.setCharacter(b.dataset.guideOption)));
+
+  // click: a happy jump
+  hit.addEventListener('click', () => {
+    if (!api.arrived) return;
+    say(rig.lines.click, 2200);
+    if (prefersReducedMotion) return;
+    gsap
+      .timeline()
+      .to(hop, { y: -60, scaleY: 1.08, scaleX: 0.93, duration: 0.28, ease: 'power2.out' })
+      .to(parts.armL, { rotation: 130, duration: 0.2 }, '<')
+      .to(parts.armR, { rotation: -130, duration: 0.2 }, '<')
+      .add(rig.flourish(), '<')
+      .to(hop, { y: 0, scaleY: 0.86, scaleX: 1.1, duration: 0.24, ease: 'power2.in' })
+      .to(hop, { scaleY: 1, scaleX: 1, duration: 0.45, ease: 'elastic.out(1.2, 0.4)' })
+      .to([parts.armL, parts.armR], { rotation: 0, duration: 0.35 }, '<');
+  });
+
+  window.addEventListener('resize', () => {
+    if (!entered || !api.arrived) return;
+    gsap.set(el, target(anchor(scene)));
+  });
+
+  if (!prefersReducedMotion) {
+    // blink the active character's eyes every few seconds
+    const blink = () => {
+      gsap.to(parts.eyes, { scaleY: 0.08, duration: 0.07, yoyo: true, repeat: 1, ease: 'power1.inOut' });
+      gsap.delayedCall(2.5 + Math.random() * 3, blink);
+    };
+    gsap.delayedCall(2, blink);
+
+    // eyes follow the pointer; lean a little with scroll speed
+    const lean = gsap.quickTo(el, 'rotation', { duration: 0.5, ease: 'power3' });
+    const gaze = { x: 0, y: 0 };
+    gsap.ticker.add(() => {
+      if (!entered) return;
+      let gx = 0;
+      let gy = 0;
+      if (look) {
+        gx = look.x;
+        gy = look.y;
+      } else if (pointer.x || pointer.y) {
+        const r = svg.getBoundingClientRect();
+        const dx = pointer.x - (r.left + r.width / 2);
+        const dy = pointer.y - (r.top + r.height * rig.eyeY);
+        const d = Math.hypot(dx, dy) || 1;
+        const m = Math.min(rig.look, d / 40);
+        gx = (dx / d) * m * facing; // the SVG is mirrored when facing left
+        gy = (dy / d) * m;
+      }
+      gaze.x += (gx - gaze.x) * 0.2;
+      gaze.y += (gy - gaze.y) * 0.2;
+      gsap.set(parts.pupils, { x: gaze.x, y: gaze.y });
+      lean(gsap.utils.clamp(-8, 8, (lenis?.velocity || 0) * -0.35));
+    });
+  }
+
+  return api;
+})();
 
 /* ------------------------------------------------------------------ */
 /* Theme switcher                                                      */
@@ -928,7 +1101,10 @@ function setupScrollAnimations() {
         scrub: 1,
         refreshPriority: 1,
         invalidateOnRefresh: true,
-        onUpdate: (self) => gsap.set('.progress-bar span', { scaleX: self.progress }),
+        onUpdate: (self) => {
+          gsap.set('.progress-bar span', { scaleX: self.progress });
+          comby.follow(self.progress);
+        },
       },
     });
 

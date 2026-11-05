@@ -1747,11 +1747,204 @@ h3 {
   filter: drop-shadow(0 6px 18px rgba(var(--accent-rgb), 0.35));
 }
 
+/* ---------- Comby (mascot) ---------- */
+.comby {
+  --comby-w: 150px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: var(--comby-w);
+  aspect-ratio: 160 / 200;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
+.comby-hop {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+}
+
+.comby-hit {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+  border-radius: 40%;
+}
+
+.comby-hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.comby-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 14px 24px rgba(var(--primary-rgb), 0.35));
+}
+
+/* only the chosen guide is shown */
+.comby-svg:not(.is-active) {
+  display: none;
+}
+
+.comby-hit {
+  position: relative;
+}
+
+.cb-shadow { fill: rgba(var(--text-rgb), 0.12); }
+.cb-spine { fill: url(#combyBody); }
+.cb-gloss { fill: rgba(255, 255, 255, 0.4); }
+.cb-leg rect,
+.cb-tooth { fill: var(--primary); }
+.cb-foot { fill: var(--accent); }
+.cb-arm path {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+.cb-arm circle { fill: var(--accent); }
+.cb-tuft {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.cb-white { fill: #fff; }
+.cb-pupil circle { fill: #2a1b20; }
+.cb-pupil .cb-glint { fill: #fff; }
+.cb-cheek { fill: rgba(255, 255, 255, 0.45); }
+.cb-sparkle { fill: var(--primary); opacity: 0; }
+.cb-mouth {
+  fill: none;
+  stroke: #2a1b20;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+
+/* Comby's hairbrush look */
+.br-head { fill: url(#brushHead); }
+.br-gloss { fill: rgba(255, 255, 255, 0.4); }
+.br-handle { fill: var(--primary); }
+.br-band { fill: var(--accent); }
+.br-bristle line {
+  stroke: var(--primary);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+.br-bristle circle { fill: var(--accent); }
+
+.comby-bubble {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: 50%;
+  width: max-content;
+  max-width: 230px;
+  padding: 12px 16px;
+  border-radius: 18px 18px 18px 6px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.35;
+  opacity: 0;
+  transform-origin: 0% 100%;
+  pointer-events: none;
+}
+
+/* near the right edge the bubble opens to the left instead */
+.comby.bubble-left .comby-bubble {
+  left: auto;
+  right: 50%;
+  border-radius: 18px 18px 6px 18px;
+  transform-origin: 100% 100%;
+}
+
+/* ---------- Guide switch ---------- */
+.guide-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(var(--bg-rgb), 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.guide-option {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  transition: background 0.3s, color 0.3s, transform 0.4s var(--ease);
+}
+
+.guide-option svg {
+  width: 16px;
+  height: 16px;
+}
+
+.guide-option:hover {
+  color: var(--text);
+  transform: scale(1.1);
+}
+
+.guide-option[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.guide-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.menu-guide {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--subtle);
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
   .main-nav,
   .header-cta {
     display: none;
+  }
+
+  .nav-wrap > .guide-switch {
+    display: none; /* lives in the menu on small screens */
   }
 
   .theme-switch {
@@ -1808,6 +2001,16 @@ h3 {
 
   .features-progress {
     display: none;
+  }
+
+  .comby {
+    --comby-w: 84px;
+  }
+
+  .comby-bubble {
+    max-width: 190px;
+    font-size: 0.8rem;
+    padding: 10px 13px;
   }
 
   .ai-card-inner {
