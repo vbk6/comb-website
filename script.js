@@ -1168,6 +1168,143 @@ const comby = (() => {
 })();
 
 /* ------------------------------------------------------------------ */
+/* AI demos: Bay's insight feed and COMB Studio's style preview.       */
+/* Both only run while on screen.                                      */
+/* ------------------------------------------------------------------ */
+const whileVisible = (el, start, stop) => {
+  new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()), { threshold: 0.2 }).observe(el);
+};
+
+(() => {
+  const feed = document.querySelector('.bay-feed');
+  if (!feed) return;
+
+  // illustrative insights, like the dashboard mock-up above
+  const INSIGHTS = [
+    { text: 'Good morning! Revenue is up 8% on last week. 📈' },
+    { text: "3 regular clients haven't booked in 6 weeks. Send them a reminder?", actions: ['Send reminder', 'Later'] },
+    { text: 'Thursday 4–6 PM looks understaffed. Move a stylist from Friday?', actions: ['Adjust shifts'] },
+    { text: 'Colour services are your top earner this month. Feature them in your next offer? ✨', actions: ['Create offer'] },
+  ];
+  const MAX_VISIBLE = 3;
+
+  const message = ({ text, actions }) => {
+    const msg = document.createElement('div');
+    msg.className = 'bay-msg';
+    msg.textContent = text;
+    if (actions) {
+      const row = document.createElement('div');
+      row.className = 'bay-actions';
+      actions.forEach((label) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.addEventListener('click', () => {
+          row.querySelectorAll('button').forEach((x) => x.classList.remove('is-done'));
+          b.classList.add('is-done');
+          b.textContent = `✓ ${label}`;
+        });
+        row.appendChild(b);
+      });
+      msg.appendChild(row);
+    }
+    return msg;
+  };
+
+  if (prefersReducedMotion) {
+    INSIGHTS.slice(0, MAX_VISIBLE).forEach((i) => feed.appendChild(message(i)));
+    return;
+  }
+
+  let i = 0;
+  let tl = null;
+  const next = () => {
+    const typing = document.createElement('div');
+    typing.className = 'bay-typing';
+    typing.innerHTML = '<i></i><i></i><i></i>';
+    tl = gsap
+      .timeline({ onComplete: () => (tl = gsap.delayedCall(2.6, next)) })
+      .add(() => feed.appendChild(typing))
+      .from(typing, { opacity: 0, y: 10, duration: 0.3 })
+      .add(() => {
+        typing.remove();
+        const msg = message(INSIGHTS[i++ % INSIGHTS.length]);
+        feed.appendChild(msg);
+        // keep the latest few; older ones drift off the top
+        const all = feed.querySelectorAll('.bay-msg');
+        if (all.length > MAX_VISIBLE) gsap.to(all[0], { opacity: 0, height: 0, margin: 0, padding: 0, duration: 0.4, onComplete: () => all[0].remove() });
+        gsap.from(msg, { opacity: 0, y: 16, scale: 0.96, transformOrigin: '0% 100%', duration: 0.45, ease: 'back.out(1.8)' });
+      }, '+=1');
+  };
+
+  whileVisible(
+    feed,
+    () => {
+      if (!tl) next();
+      else tl.resume();
+    },
+    () => tl?.pause()
+  );
+})();
+
+(() => {
+  const stage = document.querySelector('.studio-stage');
+  if (!stage) return;
+  const shades = [...document.querySelectorAll('.studio-shades .shade')];
+  const styles = [...document.querySelectorAll('.studio-styles .style-btn')];
+  const photos = stage.querySelectorAll('.studio-photo');
+  const caption = document.querySelector('.studio-caption');
+  let shade = 0; // the photo's natural colour
+  let style = 0; // Long waves
+
+  const render = () => {
+    const s = shades[shade];
+    const natural = s.classList.contains('shade-natural');
+    stage.classList.toggle('is-natural', natural);
+    if (!natural) {
+      stage.style.setProperty('--hair', s.style.getPropertyValue('--c'));
+      stage.style.setProperty('--hair-light', s.style.getPropertyValue('--l'));
+      stage.style.setProperty('--hair-deep', s.dataset.deep);
+    }
+    shades.forEach((b, i) => b.setAttribute('aria-pressed', String(i === shade)));
+    styles.forEach((b, i) => b.setAttribute('aria-pressed', String(i === style)));
+    photos.forEach((p) => p.classList.toggle('is-on', p.dataset.style === styles[style].dataset.style));
+    caption.innerHTML = `Previewing <strong>${s.dataset.name}</strong> · <strong>${styles[style].textContent}</strong>`;
+  };
+  render();
+
+  // auto-play: alternate between changing the shade and the style
+  let timer = null;
+  let step = 0;
+  let pausedUntil = 0;
+  const tick = () => {
+    if (Date.now() >= pausedUntil) {
+      if (step++ % 2) style = (style + 1) % styles.length;
+      else shade = (shade + 1) % shades.length;
+      render();
+    }
+    timer = setTimeout(tick, 2400);
+  };
+
+  // a visitor's own pick holds for a while before auto-play resumes
+  const pick = () => (pausedUntil = Date.now() + 9000);
+  shades.forEach((b, i) => b.addEventListener('click', () => ((shade = i), pick(), render())));
+  styles.forEach((b, i) => b.addEventListener('click', () => ((style = i), pick(), render())));
+
+  if (prefersReducedMotion) return;
+  whileVisible(
+    stage,
+    () => {
+      if (!timer) timer = setTimeout(tick, 1600);
+    },
+    () => {
+      clearTimeout(timer);
+      timer = null;
+    }
+  );
+})();
+
+/* ------------------------------------------------------------------ */
 /* Theme switcher                                                      */
 /* ------------------------------------------------------------------ */
 const swatches = document.querySelectorAll('[data-theme-option]');
@@ -1293,6 +1430,7 @@ function heroIntro() {
     .from('.hero-title .split-word', { yPercent: 140, rotate: 4, duration: 1.4, stagger: 0.06 }, 0.15)
     .from('.hero-lead', { y: 30, opacity: 0, duration: 1.2 }, 0.6)
     .from('.hero-actions .button', { y: 30, opacity: 0, duration: 1.2, stagger: 0.08 }, 0.7)
+    .from('.hero-spotlight', { y: 20, opacity: 0, duration: 1.2 }, 0.85)
     .from('.mini-stats li', { y: 30, opacity: 0, duration: 1.2, stagger: 0.08 }, 0.8)
     .from('.scroll-hint', { opacity: 0, duration: 1 }, 1.1);
   return tl;

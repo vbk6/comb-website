@@ -302,9 +302,16 @@
               COMB helps salon owners manage appointments, customers, billing, teams,
               and growth insights from one elegant dashboard designed for real salon life.
             </p>
-            <div class="hero-actions">
-              <a href="#contact" class="button button-primary" data-magnetic><span>Request a Demo</span></a>
-              <a href="#features" class="button button-secondary" data-magnetic><span>Explore Features</span></a>
+            <div class="hero-cta">
+              <div class="hero-actions">
+                <a href="#contact" class="button button-primary" data-magnetic><span>Request a Demo</span></a>
+                <a href="#features" class="button button-secondary" data-magnetic><span>Explore Features</span></a>
+              </div>
+              <a href="#ai" class="hero-spotlight">
+                <span class="spot-star" aria-hidden="true">✦</span>
+                <span>Only on COMB: <strong>Bay</strong> AI advisor &amp; <strong>COMB Studio</strong></span>
+                <span class="spot-arrow" aria-hidden="true">→</span>
+              </a>
             </div>
           </div>
           <ul class="mini-stats">
@@ -326,11 +333,13 @@
             <span>Appointments</span><i>✦</i><span>Customer intelligence</span><i>✦</i>
             <span>Billing &amp; payments</span><i>✦</i><span>Staff oversight</span><i>✦</i>
             <span>Reports &amp; insights</span><i>✦</i><span>WhatsApp center</span><i>✦</i>
+            <span class="marquee-hl">Bay AI advisor</span><i>✦</i><span class="marquee-hl">COMB Studio</span><i>✦</i>
           </div>
           <div class="marquee-row">
             <span>Appointments</span><i>✦</i><span>Customer intelligence</span><i>✦</i>
             <span>Billing &amp; payments</span><i>✦</i><span>Staff oversight</span><i>✦</i>
             <span>Reports &amp; insights</span><i>✦</i><span>WhatsApp center</span><i>✦</i>
+            <span class="marquee-hl">Bay AI advisor</span><i>✦</i><span class="marquee-hl">COMB Studio</span><i>✦</i>
           </div>
         </div>
       </section>
@@ -498,45 +507,125 @@
           <p class="eyebrow center">THE AI DIFFERENCE</p>
           <h2 class="section-title center" data-split>Smarter decisions, faster actions.</h2>
 
+          <p class="section-sub center">Two things you won't find in other salon software.</p>
+
           <div class="ai-stack">
             <article class="ai-card alt" data-glow>
               <div class="ai-card-inner">
-                <div class="ai-title-wrap">
-                  <span class="ai-mark">01</span>
-                  <div class="ai-label">AI BUSINESS ADVISOR</div>
-                  <h3>Bay</h3>
+                <div class="ai-copy">
+                  <div class="ai-title-wrap">
+                    <div class="ai-top">
+                      <span class="ai-mark">01</span>
+                      <span class="ai-only">✦ Only on COMB</span>
+                    </div>
+                    <div class="ai-label">AI BUSINESS ADVISOR</div>
+                    <h3>Bay</h3>
+                  </div>
+                  <div class="ai-body">
+                    <p>
+                      Bay reads salon data and flags what matters right now: revenue trends, inactive clients,
+                      staffing gaps, and performance opportunities.
+                    </p>
+                    <ul>
+                      <li>Revenue and trend alerts</li>
+                      <li>Retention opportunities</li>
+                      <li>Decision support for owners</li>
+                    </ul>
+                  </div>
                 </div>
-                <div class="ai-body">
-                  <p>
-                    Bay reads salon data and flags what matters right now: revenue trends, inactive clients,
-                    staffing gaps, and performance opportunities.
-                  </p>
-                  <ul>
-                    <li>Revenue and trend alerts</li>
-                    <li>Retention opportunities</li>
-                    <li>Decision support for owners</li>
-                  </ul>
+
+                <!-- illustrative demo: Bay's insights appear one by one (filled in by script.js) -->
+                <div class="ai-demo bay-demo">
+                  <div class="bay-panel">
+                    <div class="bay-head">
+                      <span class="bay-avatar" aria-hidden="true">B</span>
+                      <div>
+                        <strong>Bay</strong>
+                        <span><i class="bay-online" aria-hidden="true"></i>AI business advisor</span>
+                      </div>
+                    </div>
+                    <div class="bay-feed" aria-live="off"></div>
+                  </div>
                 </div>
               </div>
             </article>
 
             <article class="ai-card purple" data-glow>
               <div class="ai-card-inner">
-                <div class="ai-title-wrap">
-                  <span class="ai-mark">02</span>
-                  <div class="ai-label">AI DESIGN ASSISTANT</div>
-                  <h3>COMB Studio</h3>
+                <div class="ai-copy">
+                  <div class="ai-title-wrap">
+                    <div class="ai-top">
+                      <span class="ai-mark">02</span>
+                      <span class="ai-only">✦ Only on COMB</span>
+                    </div>
+                    <div class="ai-label">AI DESIGN ASSISTANT</div>
+                    <h3>COMB Studio</h3>
+                  </div>
+                  <div class="ai-body">
+                    <p>
+                      Help clients explore hairstyles and shade ideas visually before the service starts, making
+                      consultations more confident and more premium.
+                    </p>
+                    <ul>
+                      <li>Haircut and colour previews</li>
+                      <li>Lookbook style exploration</li>
+                      <li>More confident customer decisions</li>
+                    </ul>
+                  </div>
                 </div>
-                <div class="ai-body">
-                  <p>
-                    Help clients explore hairstyles and shade ideas visually before the service starts, making
-                    consultations more confident and more premium.
-                  </p>
-                  <ul>
-                    <li>Haircut and colour previews</li>
-                    <li>Lookbook style exploration</li>
-                    <li>More confident customer decisions</li>
-                  </ul>
+
+                <!-- illustrative demo: try shades and styles on a client preview -->
+                <div class="ai-demo studio-demo">
+                  <div class="studio-panel">
+                    <div class="studio-head">
+                      <strong>COMB Studio</strong>
+                      <span class="studio-tag">Live preview</span>
+                    </div>
+                    <div class="studio-stage">
+                      <!-- free photos from Unsplash; MediaPipe hair masks let the shade tint only the hair -->
+                      <figure class="studio-photo" data-style="waves" style="--mask: url(images/studio/waves-hair.png)">
+                        <img src="images/studio/waves.jpg" alt="Model with long wavy hair" width="640" height="640" loading="lazy" decoding="async" />
+                        <span class="hair-deep" aria-hidden="true"></span>
+                        <span class="hair-tint" aria-hidden="true"></span>
+                        <span class="hair-lift" aria-hidden="true"></span>
+                      </figure>
+                      <figure class="studio-photo" data-style="bob" style="--mask: url(images/studio/bob-hair.png)">
+                        <img src="images/studio/bob.jpg" alt="Model with a bob haircut" width="640" height="640" loading="lazy" decoding="async" />
+                        <span class="hair-deep" aria-hidden="true"></span>
+                        <span class="hair-tint" aria-hidden="true"></span>
+                        <span class="hair-lift" aria-hidden="true"></span>
+                      </figure>
+                      <figure class="studio-photo" data-style="pixie" style="--mask: url(images/studio/pixie-hair.png)">
+                        <img src="images/studio/pixie.jpg" alt="Model with a pixie cut" width="640" height="640" loading="lazy" decoding="async" />
+                        <span class="hair-deep" aria-hidden="true"></span>
+                        <span class="hair-tint" aria-hidden="true"></span>
+                        <span class="hair-lift" aria-hidden="true"></span>
+                      </figure>
+                    </div>
+                    <div class="studio-controls">
+                      <div class="studio-row">
+                        <span>Shade</span>
+                        <div class="studio-shades" role="group" aria-label="Hair shade">
+                          <button class="shade shade-natural" data-name="Natural colour" aria-label="Natural colour"></button>
+                          <button class="shade" style="--c: #3a2219; --l: #6e4532" data-deep="#7a5a4c" data-name="Espresso" aria-label="Espresso"></button>
+                          <button class="shade" style="--c: #a3461f; --l: #d9773c" data-deep="#e6b8a0" data-name="Copper" aria-label="Copper"></button>
+                          <button class="shade" style="--c: #b39466; --l: #ecd2a4" data-deep="#ffffff" data-name="Honey blonde" aria-label="Honey blonde"></button>
+                          <button class="shade" style="--c: #b76e79; --l: #eba9ab" data-deep="#f2d4d4" data-name="Rose gold" aria-label="Rose gold"></button>
+                          <button class="shade" style="--c: #4b2346; --l: #8a4a7d" data-deep="#b892b0" data-name="Plum" aria-label="Plum"></button>
+                        </div>
+                      </div>
+                      <div class="studio-row">
+                        <span>Style</span>
+                        <div class="studio-styles" role="group" aria-label="Hairstyle">
+                          <button class="style-btn" data-style="waves">Long waves</button>
+                          <button class="style-btn" data-style="bob">Bob</button>
+                          <button class="style-btn" data-style="pixie">Pixie</button>
+                        </div>
+                      </div>
+                      <p class="studio-caption" aria-live="polite"></p>
+                      <p class="studio-credit">Photos: Michael Guertin, ola szkolda, Janko Ferlič on Unsplash</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </article>
