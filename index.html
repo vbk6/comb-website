@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="rose">
+<html lang="en" data-theme="blush">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -27,7 +27,8 @@
       // apply the saved theme before first paint
       try {
         const saved = localStorage.getItem('comb-theme');
-        if (saved) document.documentElement.dataset.theme = saved;
+        const themes = ['rose', 'sage', 'blush', 'candy', 'midnight'];
+        if (themes.includes(saved)) document.documentElement.dataset.theme = saved;
       } catch (e) {}
     </script>
 
@@ -45,10 +46,10 @@
   </head>
   <body class="is-loading">
     <!-- Preloader -->
-    <!-- Plain cover until the script picks a loader; loaders are cloned from the templates below. -->
+    <!-- Plain cover until the script loads; the loader is cloned from the template below. -->
     <div class="preloader-cover" aria-hidden="true"></div>
 
-    <!-- Loader 1: scissors cut the sheet in two, then the halves fall away.
+    <!-- Loader: scissors cut the sheet in two, then the halves fall away.
          Both halves hold the same content and are clipped to their side of the cut. -->
     <template id="loader-cut">
       <div class="preloader" aria-hidden="true">
@@ -63,12 +64,6 @@
       </div>
     </template>
 
-    <!-- Loader 2: a comb straightens tangled strands, which light up inside the letters. -->
-    <template id="loader-comb">
-      <div class="preloader pl-comb" aria-hidden="true">
-        <canvas class="pl-canvas"></canvas>
-      </div>
-    </template>
 
     <!-- WebGL stage -->
     <canvas class="webgl" aria-hidden="true"></canvas>
@@ -102,21 +97,7 @@
           <button class="swatch" data-theme-option="sage" aria-label="Sage spa theme" aria-pressed="false" style="--sw-a: #8fcfa8; --sw-b: #f0a27a"></button>
           <button class="swatch" data-theme-option="blush" aria-label="Blush light theme" aria-pressed="false" style="--sw-a: #faf3ee; --sw-b: #d6587e"></button>
           <button class="swatch" data-theme-option="candy" aria-label="Candy bright theme" aria-pressed="false" style="--sw-a: #ff2e88; --sw-b: #00a9b8"></button>
-          <button class="swatch" data-theme-option="noir" aria-label="Noir dark theme" aria-pressed="false" style="--sw-a: #0a0a0b; --sw-b: #d4a94f"></button>
           <button class="swatch" data-theme-option="midnight" aria-label="Midnight theme" aria-pressed="false" style="--sw-a: #8a72ff; --sw-b: #79f0d5"></button>
-        </div>
-
-        <div class="loader-switch" role="group" aria-label="Loading animation">
-          <button class="loader-option" data-loader-option="cut" aria-label="Scissors cut loading animation" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M8.6 7.6 20 18M8.6 16.4 20 6" />
-            </svg>
-          </button>
-          <button class="loader-option" data-loader-option="comb" aria-label="Comb through loading animation" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="5" rx="2" /><path d="M5.5 9v10M9 9v10M12.5 9v10M16 9v10M19.5 9v8" />
-            </svg>
-          </button>
         </div>
 
         <a href="#contact" class="button button-primary header-cta" data-magnetic>
@@ -137,21 +118,6 @@
         <a href="#workflow"><span>Workflow</span></a>
         <a href="#contact"><span>Contact</span></a>
       </nav>
-      <div class="menu-loader">
-        <span>Loading animation</span>
-        <div class="loader-switch" role="group" aria-label="Loading animation">
-            <button class="loader-option" data-loader-option="cut" aria-label="Scissors cut loading animation" aria-pressed="false">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M8.6 7.6 20 18M8.6 16.4 20 6" />
-              </svg>
-            </button>
-            <button class="loader-option" data-loader-option="comb" aria-label="Comb through loading animation" aria-pressed="false">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="5" rx="2" /><path d="M5.5 9v10M9 9v10M12.5 9v10M16 9v10M19.5 9v8" />
-              </svg>
-            </button>
-        </div>
-      </div>
     </div>
 
     <main id="top" class="page-shell">
@@ -215,22 +181,6 @@
               recommendations that help owners act sooner and grow faster.
             </p>
           </div>
-        </div>
-
-        <div class="comb-through" aria-hidden="true">
-          <span class="ct-label ct-calm">Calm</span>
-          <span class="ct-label ct-chaos">Chaos</span>
-          <svg class="strands" viewBox="0 0 1200 260" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="strandGrad" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
-                <stop offset="0" style="stop-color: var(--accent)" />
-                <stop offset="0.5" style="stop-color: var(--primary-2)" />
-                <stop offset="1" style="stop-color: var(--primary)" />
-              </linearGradient>
-            </defs>
-            <g class="strand-group"></g>
-          </svg>
-          <div class="comb-2d"></div>
         </div>
       </section>
 

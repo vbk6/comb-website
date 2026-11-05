@@ -126,84 +126,6 @@ function setCut(line, progress) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Comb-through: tangled strands combed straight on scroll             */
-/* ------------------------------------------------------------------ */
-const combThrough = document.querySelector('.comb-through');
-let drawStrands = () => {};
-
-if (combThrough) {
-  const group = combThrough.querySelector('.strand-group');
-  const combEl = combThrough.querySelector('.comb-2d');
-
-  // comb: vertical spine with teeth pointing right, into the strands
-  const teeth = Array.from({ length: 27 }, (_, i) => {
-    const y = 14 + i * 10.6;
-    return `<rect x="16" y="${y}" width="48" height="4.4" rx="2.2" />`;
-  }).join('');
-  combEl.innerHTML = `
-    <svg viewBox="0 0 70 300" aria-hidden="true">
-      <defs>
-        <linearGradient id="combGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" style="stop-color: var(--primary-2)" />
-          <stop offset="1" style="stop-color: var(--accent)" />
-        </linearGradient>
-      </defs>
-      <g fill="url(#combGrad)">
-        <rect x="0" y="0" width="22" height="300" rx="9" />
-        ${teeth}
-      </g>
-    </svg>`;
-
-  let seed = 7;
-  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const strands = Array.from({ length: 22 }, (_, i) => ({
-    base: 18 + i * (224 / 21),
-    a: 14 + rand() * 22,
-    b: 6 + rand() * 12,
-    f1: 0.006 + rand() * 0.01,
-    f2: 0.02 + rand() * 0.02,
-    p1: rand() * 6.28,
-    p2: rand() * 6.28,
-    p3: rand() * 6.28,
-    width: 1 + rand() * 1.4,
-    opacity: 0.35 + rand() * 0.55,
-  }));
-
-  const paths = strands.map((s) => {
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('stroke-width', s.width.toFixed(2));
-    path.setAttribute('opacity', s.opacity.toFixed(2));
-    group.appendChild(path);
-    return path;
-  });
-
-  const smooth = (e0, e1, x) => {
-    const t = gsap.utils.clamp(0, 1, (x - e0) / (e1 - e0));
-    return t * t * (3 - 2 * t);
-  };
-
-  drawStrands = (progress) => {
-    const combX = -80 + progress * 1380; // in svg units (0–1200 wide)
-    strands.forEach((s, i) => {
-      let d = '';
-      for (let x = 0; x <= 1200; x += 12) {
-        const tangle = smooth(combX - 10, combX + 160, x);
-        const calm = Math.sin(x * 0.004 + i * 0.4) * 3;
-        const chaos =
-          Math.sin(x * s.f1 + s.p1) * s.a + Math.sin(x * s.f2 + s.p2) * s.b + Math.sin(x * 0.14 + s.p3) * 3;
-        const y = s.base + calm + tangle * chaos;
-        d += `${x === 0 ? 'M' : 'L'}${x} ${y.toFixed(1)} `;
-      }
-      paths[i].setAttribute('d', d);
-    });
-    const px = (combX / 1200) * combThrough.clientWidth;
-    combEl.style.transform = `translateX(${px}px) rotate(${Math.sin(progress * 18) * 3}deg)`;
-  };
-
-  drawStrands(prefersReducedMotion ? 1 : 0);
-}
-
-/* ------------------------------------------------------------------ */
 /* Themes: CSS handles the page, this table drives the 3D scene        */
 /* ------------------------------------------------------------------ */
 // palettes: [comb colour, scissor-handle colour] per section
@@ -276,23 +198,6 @@ const THEMES = {
       cta: ['#ff2e88', '#00c2d1'],
     },
   },
-  noir: {
-    bg: '#0a0a0b',
-    primary: '#d4a94f',
-    accent: '#e9e4da',
-    blade: '#d8dbe0',
-    stars: '#f0dcae',
-    light: false,
-    palettes: {
-      hero: ['#d4a94f', '#e9e4da'],
-      why: ['#e8c987', '#b8b2a6'],
-      product: ['#b88a35', '#e9e4da'],
-      features: ['#e9e4da', '#d4a94f'],
-      ai: ['#c9973a', '#f4efe6'],
-      workflow: ['#d4a94f', '#cfc8bb'],
-      cta: ['#d4a94f', '#e9e4da'],
-    },
-  },
   midnight: {
     bg: '#050b18',
     primary: '#8a72ff',
@@ -312,7 +217,7 @@ const THEMES = {
   },
 };
 
-let themeName = THEMES[document.documentElement.dataset.theme] ? document.documentElement.dataset.theme : 'rose';
+let themeName = THEMES[document.documentElement.dataset.theme] ? document.documentElement.dataset.theme : 'blush';
 const theme = () => THEMES[themeName];
 let currentScene = 'hero';
 
@@ -922,17 +827,8 @@ function setupScrollAnimations() {
       });
     });
 
-    // comb sweeps through the tangled strands
-    const combProxy = { p: 0 };
-    gsap.to(combProxy, {
-      p: 1,
-      ease: 'none',
-      scrollTrigger: { trigger: '.comb-through', start: 'top 85%', end: 'bottom 30%', scrub: 0.6 },
-      onUpdate: () => drawStrands(combProxy.p),
-    });
-
     // scissors snip along each dashed divider
-    document.querySelectorAll('[data-cut]:not([data-cut="preloader"])').forEach((line) => {
+    document.querySelectorAll('[data-cut]').forEach((line) => {
       setCut(line, 0);
       const proxy = { p: 0 };
       gsap.to(proxy, {
@@ -1014,7 +910,6 @@ function setupScrollAnimations() {
 
   // reduced motion: show the finished states
   mm.add('(prefers-reduced-motion: reduce)', () => {
-    drawStrands(1);
     document.querySelectorAll('[data-cut]').forEach((line) => setCut(line, 1));
   });
 
@@ -1071,7 +966,7 @@ function setupScrollAnimations() {
 const TAU = Math.PI * 2;
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-// Loader 1: scissors cut the sheet in two, then the halves fall away.
+// Scissors cut the sheet in two, then the halves fall away.
 function buildCutLoader(el) {
   const top = el.querySelector('.pl-top');
   const bottom = el.querySelector('.pl-bottom');
@@ -1117,178 +1012,6 @@ function buildCutLoader(el) {
     .to(bottom, { yPercent: 62, rotation: 3, transformOrigin: '0% 50%', duration: 1.2, ease: 'expo.inOut' }, '<');
 }
 
-// Loader 2: a comb straightens a band of tangled strands; combed strands light up
-// wherever they pass through the letters, so the name appears line by line.
-function buildCombLoader(el) {
-  const canvas = el.querySelector('.pl-canvas');
-  const ctx = canvas.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const state = { p: 0, fill: 0 };
-  const colors = { text: cssVar('--text-rgb'), a: cssVar('--primary-2'), b: cssVar('--accent') };
-  let W, H, fontSize, mask, strands, bandTop, bandBottom, spacing;
-
-  const smooth = (e0, e1, x) => {
-    const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
-    return t * t * (3 - 2 * t);
-  };
-
-  const setFont = (c) => {
-    c.font = `700 ${fontSize}px "Inter Tight", Inter, sans-serif`;
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    if ('letterSpacing' in c) c.letterSpacing = `${-0.05 * fontSize}px`;
-  };
-
-  const setup = () => {
-    W = window.innerWidth;
-    H = window.innerHeight;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    fontSize = Math.min(W * 0.24, 320);
-
-    // text mask, sampled to decide which strand segments sit inside the letters
-    const m = document.createElement('canvas');
-    m.width = W;
-    m.height = H;
-    const mc = m.getContext('2d');
-    setFont(mc);
-    mc.fillText('COMB', W / 2, H / 2);
-    mask = mc.getImageData(0, 0, W, H).data;
-
-    bandTop = H / 2 - fontSize * 0.62;
-    bandBottom = H / 2 + fontSize * 0.62;
-    spacing = Math.max(4.5, fontSize / 44);
-    const count = Math.floor((bandBottom - bandTop) / spacing);
-    const amp = fontSize * 0.14;
-    let seed = 11;
-    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    strands = Array.from({ length: count }, (_, i) => ({
-      base: bandTop + i * spacing,
-      a: amp * (0.5 + rand()),
-      b: amp * (0.2 + rand() * 0.4),
-      f1: 0.004 + rand() * 0.006,
-      f2: 0.012 + rand() * 0.014,
-      p1: rand() * TAU,
-      p2: rand() * TAU,
-      alpha: 0.35 + rand() * 0.4,
-    }));
-  };
-
-  const inside = (x, y) => {
-    const xi = x | 0;
-    const yi = y | 0;
-    if (xi < 0 || yi < 0 || xi >= W || yi >= H) return false;
-    return mask[(yi * W + xi) * 4 + 3] > 110;
-  };
-
-  const drawComb = (x) => {
-    const top = bandTop - 50;
-    const height = bandBottom - bandTop + 100;
-    const grad = ctx.createLinearGradient(0, top, 0, top + height);
-    grad.addColorStop(0, colors.a);
-    grad.addColorStop(1, colors.b);
-    ctx.fillStyle = grad;
-    ctx.shadowColor = colors.b;
-    ctx.shadowBlur = 36;
-    ctx.beginPath();
-    ctx.roundRect(x - 22, top, 24, height, 12);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    // teeth point forward, into the tangles
-    const teeth = Math.floor(height / (spacing * 2.6));
-    const gap = height / teeth;
-    for (let i = 0; i < teeth; i++) {
-      ctx.beginPath();
-      ctx.roundRect(x, top + gap * (i + 0.3), 48, Math.max(3, gap * 0.38), 3);
-      ctx.fill();
-    }
-  };
-
-  const render = () => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-    const combX = -80 + state.p * (W + 220);
-    const faint = new Path2D();
-    const lit = new Path2D();
-
-    strands.forEach((s, i) => {
-      let px = 0;
-      let py = 0;
-      let target = null;
-      for (let x = 0; x <= W + 6; x += 6) {
-        const tangle = smooth(combX - 10, combX + 240, x);
-        const calm = Math.sin(x * 0.003 + i * 0.35) * 1.5;
-        const chaos = Math.sin(x * s.f1 + s.p1) * s.a + Math.sin(x * s.f2 + s.p2) * s.b;
-        const y = s.base + calm + tangle * chaos;
-        if (x > 0) {
-          // lines only glow in a thin band trailing the comb; past that the solid text takes over
-          const mx = (px + x) / 2;
-          const glowing = tangle < 0.02 && mx > combX - 70 && inside(mx, (py + y) / 2);
-          const path = glowing ? lit : faint;
-          if (path !== target) {
-            path.moveTo(px, py);
-            target = path;
-          }
-          path.lineTo(x, y);
-        }
-        px = x;
-        py = y;
-      }
-    });
-
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = `rgba(${colors.text}, ${0.28 * (1 - state.fill)})`;
-    ctx.stroke(faint);
-
-    const grad = ctx.createLinearGradient(W * 0.2, 0, W * 0.8, 0);
-    grad.addColorStop(0, colors.a);
-    grad.addColorStop(1, colors.b);
-    // crisp, solid name everywhere the comb has already passed (edge hides under the spine)
-    if (combX > 0) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, Math.max(0, combX - 70), H);
-      ctx.clip();
-      ctx.fillStyle = grad;
-      setFont(ctx);
-      ctx.fillText('COMB', W / 2, H / 2);
-      ctx.restore();
-    }
-
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = spacing * 0.6;
-    ctx.stroke(lit);
-    if (combX > -100 && combX < W + 100) drawComb(combX);
-  };
-
-  setup();
-  render();
-  const onResize = () => {
-    setup();
-    render();
-  };
-  window.addEventListener('resize', onResize);
-
-  return gsap
-    .timeline({ paused: true, onComplete: () => window.removeEventListener('resize', onResize) })
-    .to(state, { p: 1, duration: 2.8, ease: 'power1.inOut', onUpdate: render })
-    // leftover strands fade, leaving just the clean name
-    .to(state, { fill: 1, duration: 0.5, ease: 'power2.out', onUpdate: render }, '-=0.2')
-    .to(el, { yPercent: -100, duration: 1.1, ease: 'expo.inOut' }, '+=0.3');
-}
-
-const LOADERS = { cut: buildCutLoader, comb: buildCombLoader };
-let loaderName = 'cut';
-try {
-  const saved = localStorage.getItem('comb-loader');
-  if (LOADERS[saved]) loaderName = saved;
-} catch (e) {}
-
-let pageReady = false;
-let loaderPlaying = false;
-
-// First run sets up the page behind the loader; later runs just replay it.
 function runLoader() {
   document.querySelector('.preloader-cover')?.remove();
 
@@ -1297,12 +1020,9 @@ function runLoader() {
     window.scrollTo(0, 0);
     lenis?.scrollTo(0, { immediate: true, force: true });
     lenis?.start();
-    if (!pageReady) {
-      pageReady = true;
-      setupScrollAnimations();
-      setupSceneTriggers();
-      ScrollTrigger.refresh();
-    }
+    setupScrollAnimations();
+    setupSceneTriggers();
+    ScrollTrigger.refresh();
     goToScene('hero');
   };
 
@@ -1311,8 +1031,7 @@ function runLoader() {
     return;
   }
 
-  loaderPlaying = true;
-  const el = document.getElementById(`loader-${loaderName}`).content.firstElementChild.cloneNode(true);
+  const el = document.getElementById('loader-cut').content.firstElementChild.cloneNode(true);
   document.body.appendChild(el);
   document.body.classList.add('is-loading');
   lenis?.stop();
@@ -1321,11 +1040,10 @@ function runLoader() {
   // jump ahead and skip most of the animation, so treat any big gap as one frame.
   gsap.ticker.lagSmoothing(500, 33);
 
-  const tl = LOADERS[loaderName](el);
+  const tl = buildCutLoader(el);
   tl.add(() => {
     el.remove();
     gsap.ticker.lagSmoothing(0); // back to Lenis' preferred setting
-    loaderPlaying = false;
     setupPage();
   }).add(heroIntro(), '-=0.75');
 
@@ -1333,26 +1051,5 @@ function runLoader() {
   requestAnimationFrame(() => requestAnimationFrame(() => tl.play()));
 }
 
-/* ------------------------------------------------------------------ */
-/* Loader switch                                                       */
-/* ------------------------------------------------------------------ */
-const loaderButtons = document.querySelectorAll('[data-loader-option]');
-const markLoader = () =>
-  loaderButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.loaderOption === loaderName)));
-markLoader();
-
-loaderButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    if (loaderPlaying || !pageReady) return;
-    loaderName = button.dataset.loaderOption;
-    markLoader();
-    try {
-      localStorage.setItem('comb-loader', loaderName);
-    } catch (e) {}
-    closeMenu();
-    runLoader(); // replay so the choice can be seen straight away
-  });
-});
-
-// Fonts affect layout of split text/pins (and the loader's canvas text), so wait for them.
+// Fonts affect layout of split text/pins, so wait for them before measuring.
 (document.fonts?.ready ?? Promise.resolve()).then(runLoader);
