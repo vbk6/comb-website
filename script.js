@@ -371,10 +371,10 @@ function setupSceneTriggers() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Comby's voice and sounds. Lines are read aloud with the browser's   */
-/* built-in speech (Web Speech API); effects are synthesised live with */
-/* Web Audio, so there are no audio files. Off by default: browsers    */
-/* only allow audio after a user gesture.                              */
+/* Comby's voice and sounds. Lines play from recorded voice clips,    */
+/* falling back to the browser's built-in speech; effects are          */
+/* synthesised live with Web Audio. Off by default: browsers only      */
+/* allow audio after a user gesture.                                   */
 /* ------------------------------------------------------------------ */
 const sfx = (() => {
   const toggleBtn = document.querySelector('.sound-toggle');
@@ -530,18 +530,35 @@ const sfx = (() => {
   const speakable = (text) =>
     text.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/…/g, '...').replace(/\s+/g, ' ').trim();
 
-  // read a line aloud; returns true if speech started (onEnd fires when it finishes)
-  api.speak = (text, opts = {}, onEnd) => {
-    if (!on) return false;
-    if (!synth) {
-      api.voice(text, opts); // no speech support: fall back to babble
-      return false;
+  // ---- recorded voice clips (Kokoro "am_echo"; see tools/voice/README.md) ----
+  // Each line's clip is named after a hash of its exact text, so an edited line
+  // without a new recording simply falls back to the browser voice.
+  const fnv1a = (text) => {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
     }
-    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
-      toggleBtn.classList.add('is-hinting');
-      return 'blocked';
+    return h.toString(16).padStart(8, '0');
+  };
+  const clips = new Map();
+  const clipFor = (text) => {
+    const url = `audio/voice/${fnv1a(text)}.m4a`;
+    if (!clips.has(url)) {
+      const audio = new Audio(url);
+      audio.preload = 'auto';
+      clips.set(url, audio);
     }
-    api.stopSpeaking();
+    return clips.get(url);
+  };
+  api.preload = (texts) => texts.forEach(clipFor);
+
+  let playing = null; // the clip currently being heard
+  let lineToken = null; // identifies the latest line, so stale end/error events are ignored
+
+  // the browser's built-in voice, used when a line has no recorded clip
+  function speakWithBrowser(text, opts, onEnd) {
+    if (!synth) return api.voice(text, opts); // no speech support at all: babble
     const u = new SpeechSynthesisUtterance(speakable(text));
     if (ttsVoice) u.voice = ttsVoice;
     u.lang = ttsVoice?.lang || 'en-US';
@@ -555,13 +572,51 @@ const sfx = (() => {
     };
     utter = u;
     synth.speak(u);
+  }
+
+  // read a line aloud; returns true if speaking started (onEnd fires when it finishes),
+  // or 'blocked' if the browser won't allow sound until the visitor interacts
+  api.speak = (text, opts = {}, onEnd) => {
+    if (!on) return false;
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+      toggleBtn.classList.add('is-hinting');
+      return 'blocked';
+    }
+    api.stopSpeaking();
+    const token = (lineToken = {});
+    const clip = clipFor(text);
+    let fellBack = false;
+    // both the error event and the rejected play() can report a missing clip; act once
+    const fallback = () => {
+      if (lineToken !== token || fellBack) return;
+      fellBack = true;
+      playing = null;
+      speakWithBrowser(text, opts, onEnd);
+    };
+    clip.onended = () => {
+      if (lineToken !== token) return;
+      playing = null;
+      lineToken = null;
+      onEnd?.();
+    };
+    clip.onerror = fallback; // e.g. no recording for this line yet
+    clip.currentTime = 0;
+    clip.volume = opts.clipVolume ?? 0.8;
+    playing = clip;
+    clip.play().catch(fallback);
     return true;
   };
 
   api.stopSpeaking = () => {
-    if (!synth || !utter) return;
-    utter = null; // cleared first so the cancelled line's end event is ignored
-    synth.cancel();
+    lineToken = null;
+    if (playing) {
+      playing.pause();
+      playing = null;
+    }
+    if (synth && utter) {
+      utter = null; // cleared first so the cancelled line's end event is ignored
+      synth.cancel();
+    }
   };
 
   function render() {
@@ -728,6 +783,7 @@ const comby = (() => {
       pupils: svg.querySelectorAll('.cb-pupil'),
     });
     hit.setAttribute('aria-label', `${rig.label}, your guide. Click to say hi.`);
+    if (sfx.on) sfx.preload(Object.values(rig.lines));
     guideButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.guideOption === name)));
     gsap.set(svg, { scaleX: facing });
   }
@@ -1042,6 +1098,7 @@ const comby = (() => {
 
   document.querySelector('.sound-toggle').addEventListener('click', () => {
     sfx.setOn(!sfx.on);
+    if (sfx.on) sfx.preload(Object.values(rig.lines));
     if (sfx.on && entered) say('Yay, now you can hear me! 🎶', 2600);
     else if (!sfx.on) {
       // muted mid-line: the bubble no longer waits for the voice
