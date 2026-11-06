@@ -883,13 +883,19 @@ sup {
   opacity: 0;
 }
 
+/* caption sits above the formula, both right-aligned, so they never collide */
 .feat-caption {
   position: absolute;
-  right: calc(var(--pad) + 190px);
-  bottom: 44px;
+  right: var(--pad);
+  bottom: calc(34px + clamp(24px, 2.2vw, 36px) * 1.5 + 12px);
+  padding-bottom: 10px;
   font-size: 11px;
   text-align: right;
   color: var(--cream-70);
+  background-image: linear-gradient(90deg, var(--cream-45) 50%, transparent 50%);
+  background-size: 4px 1px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
 }
 
 .feat-formula {
@@ -1544,13 +1550,6 @@ sup {
 
   .feat-art {
     padding: 20px var(--pad) 120px;
-  }
-
-  .feat-caption {
-    left: var(--pad);
-    right: auto;
-    bottom: 40px;
-    text-align: left;
   }
 
   .feat-formula {

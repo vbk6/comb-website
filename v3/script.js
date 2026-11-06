@@ -203,7 +203,11 @@ function reveals() {
 
   // features: each drawing sketches itself in as it arrives
   $$('.feat').forEach((feat) => {
-    const tl = gsap.timeline({ scrollTrigger: { trigger: feat, start: 'top 62%' }, defaults: { ease: 'power2.out' } });
+    // draws in each time the feature comes into view (either direction) and clears as it leaves
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: feat, start: 'top 62%', end: 'bottom 38%', toggleActions: 'play reverse play reverse' },
+      defaults: { ease: 'power2.out' },
+    });
     // skip parts a drawing doesn't have
     const add = (method, sel, vars, at) => {
       const els = $$(sel, feat);
