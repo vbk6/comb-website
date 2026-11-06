@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>COMB | AI Salon Operations</title>
+    <meta
+      name="description"
+      content="COMB helps salons and beauty businesses manage bookings, client retention, and performance with AI-powered operations."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23141210'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Arial' font-weight='700' font-size='34' fill='%23f6efdc'%3EC%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.scrollTo(0, 0);
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  </head>
+  <body class="is-loading">
+    <!-- Loader: scissors cut the sheet in two along the middle, then the halves part.
+         Both halves hold the same content and are clipped to their side of the cut. -->
+    <div class="loader" aria-hidden="true">
+      <div class="ld-half ld-top">
+        <div class="ld-grid"><i style="--x: 10.4%"></i><i style="--x: 22.2%"></i><i style="--x: 77.8%"></i><i style="--x: 89.6%"></i></div>
+        <div class="ld-content"><span class="ld-word">COMB</span></div>
+      </div>
+      <div class="ld-half ld-bottom">
+        <div class="ld-grid"><i style="--x: 10.4%"></i><i style="--x: 22.2%"></i><i style="--x: 77.8%"></i><i style="--x: 89.6%"></i></div>
+        <div class="ld-content"><span class="ld-word">COMB</span></div>
+      </div>
+      <span class="ld-slit"></span>
+      <span class="ld-scissors">
+        <svg viewBox="0 0 64 40">
+          <g class="blade-a">
+            <path d="M27 17.2 L61.5 19.6 L61.5 20.3 L27 21 Z" />
+            <path d="M17 13 L30 19 L29 21 L15.5 15 Z" />
+            <circle cx="11" cy="10" r="6.5" />
+            <circle cx="11" cy="10" r="4.2" class="ring-in" />
+          </g>
+          <g class="blade-b">
+            <path d="M27 22.8 L61.5 20.4 L61.5 19.7 L27 19 Z" />
+            <path d="M17 27 L30 21 L29 19 L15.5 25 Z" />
+            <circle cx="11" cy="30" r="6.5" />
+            <circle cx="11" cy="30" r="4.2" class="ring-in" />
+          </g>
+          <circle cx="30" cy="20" r="2" />
+        </svg>
+      </span>
+    </div>
+
+    <!-- drafting grid over the whole page -->
+    <div class="grid-lines" aria-hidden="true">
+      <span class="v" style="--x: 10.4%"></span>
+      <span class="v" style="--x: 22.2%"></span>
+      <span class="v" style="--x: 77.8%"></span>
+      <span class="v" style="--x: 89.6%"></span>
+      <span class="h" style="--y: 33.5%"></span>
+      <span class="h" style="--y: 66.5%"></span>
+    </div>
+
+    <header class="hud">
+      <div class="hud-left">
+        <a href="#top" class="brand" aria-label="COMB home">
+          <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+            <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="2.4" />
+            <path d="M11 16h18M13 16v10M17 16v12M21 16v12M25 16v10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
+          </svg>
+          <span class="brand-word">COMB</span>
+        </a>
+        <nav class="hud-nav" aria-label="Main">
+          <a href="#features">Features</a>
+          <a href="#ai">AI</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#contact">Contact</a>
+        </nav>
+      </div>
+      <a href="#contact" class="hud-cta">Request a demo</a>
+    </header>
+
+    <div class="progress" aria-hidden="true"><span></span></div>
+
+    <main>
+      <!-- 1. FILM: one pinned stage the camera travels through -->
+      <section class="film" id="top" aria-label="Introduction">
+        <div class="film-stage">
+          <div class="shot shot-a"><img src="img/cut.jpg" alt="A stylist colouring a client's hair in a salon" /></div>
+          <div class="shot shot-b"><img src="img/salon.jpg" alt="A dark salon interior with arched mirrors and two chairs" /></div>
+          <div class="tint" aria-hidden="true"></div>
+
+          <div class="intro">
+            <p class="intro-eyebrow">Salon operations · AI · Growth</p>
+            <h1 class="intro-title">
+              <span class="line l1"><span>Run a salon</span></span>
+              <span class="line l2"><span>with less admin</span></span>
+              <span class="line l3"><span>and more bookings.</span></span>
+            </h1>
+            <p class="intro-lead">
+              COMB helps salon owners manage appointments, customers, billing, teams, and growth insights from one
+              elegant dashboard designed for real salon life.
+            </p>
+            <ul class="intro-stats">
+              <li><strong>1</strong><span>single workspace</span></li>
+              <li><strong>24/7</strong><span>smart insight</span></li>
+              <li><strong>AI</strong><span>built in</span></li>
+            </ul>
+            <p class="scroll-cue">Scroll down to explore</p>
+          </div>
+
+          <div class="why">
+            <p class="why-eyebrow">— Why salons choose COMB</p>
+            <h2 class="why-line why-a line"><span>From appointment chaos</span></h2>
+            <h2 class="why-line why-b line"><span>to a calmer, smarter salon.</span></h2>
+            <p class="why-copy why-copy-a">
+              Salon owners spend too much time chasing bookings, explaining pricing, following up on payments, and
+              managing staff schedules manually.
+            </p>
+          </div>
+
+          <div class="device-wrap">
+            <h2 class="device-title">
+              <span class="line"><span>One simple</span></span>
+              <span class="line"><span>system</span></span>
+            </h2>
+            <div class="device" role="img" aria-label="COMB dashboard: today's revenue ₹42,800, up 8%, 64 bookings, 12 of 15 staff on duty">
+              <div class="device-float">
+                <div class="device-head"><span>Today</span><span class="badge">+8%</span></div>
+                <p class="device-label">Revenue</p>
+                <p class="device-value">₹42,800</p>
+                <div class="device-bars">
+                  <span style="--h: 32%"></span><span style="--h: 44%"></span><span style="--h: 60%"></span
+                  ><span style="--h: 52%"></span><span style="--h: 76%"></span><span style="--h: 92%"></span>
+                </div>
+                <div class="device-stats">
+                  <div><span>Bookings</span><strong>64</strong></div>
+                  <div><span>Staff on duty</span><strong>12/15</strong></div>
+                </div>
+                <p class="device-alert"><i></i>3 clients at risk — Bay</p>
+                <p class="device-alert ok"><i></i>Slot 4:30 PM confirmed</p>
+              </div>
+            </div>
+            <p class="device-copy">
+              COMB brings the everyday work of running a salon into one simple system, while adding AI-powered
+              recommendations that help owners act sooner and grow faster.
+            </p>
+          </div>
+
+          <div class="film-fade" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <!-- 2. FEATURES: pinned, step-through with an exploded line drawing -->
+      <section class="features" id="features" aria-label="Features">
+        <div class="features-stage">
+          <div class="f-counter">
+            <span class="f-num">01</span>
+            <span class="f-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          </div>
+          <h2 class="f-heading">— Built for<br />the salon floor</h2>
+          <p class="f-tag">Available now</p>
+
+          <div class="f-copy">
+            <h3 class="f-name">Appointments</h3>
+            <p class="f-desc">Track walk-ins, manage confirmations, reduce missed slots, and keep the day moving.</p>
+            <span class="f-rule" aria-hidden="true"></span>
+          </div>
+
+          <svg class="shears" viewBox="0 0 400 480" aria-hidden="true">
+            <defs>
+              <g id="blade">
+                <path d="M196 214 L206 196 L214 70 Q214 40 205 24 Q197 46 196 80 L190 200 Z" />
+                <path d="M201 190 L208 76" fill="none" stroke-width="1.2" />
+                <path d="M193 214 L205 224 L170 298 L156 292 Z" />
+                <circle cx="146" cy="332" r="40" />
+                <circle cx="146" cy="332" r="27" fill="none" stroke-width="1.2" />
+                <path d="M114 356 Q92 372 86 402 Q100 384 122 368" />
+              </g>
+            </defs>
+            <g class="shears-body">
+              <g class="part part-b">
+                <use href="#blade" class="depth" transform="translate(405 5) scale(-1 1)" />
+                <use href="#blade" transform="translate(400 0) scale(-1 1)" />
+              </g>
+              <g class="part part-a">
+                <use href="#blade" class="depth" transform="translate(5 5)" />
+                <use href="#blade" />
+              </g>
+              <path class="leader" d="M200 206 L300 120" />
+              <g class="part part-screw">
+                <circle cx="200" cy="206" r="11" />
+                <circle cx="200" cy="206" r="4.5" fill="none" stroke-width="1.2" />
+                <path d="M193 206h14" fill="none" stroke-width="1.2" />
+              </g>
+              <g class="callouts">
+                <text x="250" y="60">BLADE · 01</text>
+                <text x="18" y="440">RING · 02</text>
+                <text x="316" y="112">PIVOT · 03</text>
+              </g>
+            </g>
+          </svg>
+
+          <p class="f-word" aria-hidden="true"><span>BOOK</span></p>
+        </div>
+      </section>
+
+      <!-- 3. AI -->
+      <section class="ai" id="ai" aria-label="The AI difference">
+        <div class="ai-head">
+          <p class="eyebrow">— The AI difference</p>
+          <h2 class="stagger-title">
+            <span class="line"><span>Smarter decisions,</span></span>
+            <span class="line indent"><span>faster actions.</span></span>
+          </h2>
+          <p class="ai-sub">Two things you won't find in other salon software.</p>
+        </div>
+
+        <article class="ai-row">
+          <div class="ai-meta">
+            <span class="ai-num">01</span>
+            <span class="ai-only">✦ Only on COMB</span>
+            <span class="ai-kind">AI business advisor</span>
+          </div>
+          <div class="ai-body">
+            <h3 class="ai-name">Bay</h3>
+            <p>
+              Bay reads salon data and flags what matters right now: revenue trends, inactive clients, staffing gaps,
+              and performance opportunities.
+            </p>
+            <ul class="ai-list">
+              <li>Revenue and trend alerts</li>
+              <li>Retention opportunities</li>
+              <li>Decision support for owners</li>
+            </ul>
+          </div>
+          <!-- illustrative demo: Bay's insights arrive one by one (filled in by script.js) -->
+          <div class="panel bay-panel">
+            <div class="panel-head">
+              <span class="bay-avatar" aria-hidden="true">B</span>
+              <div class="panel-who">
+                <strong>Bay</strong>
+                <span>AI business advisor</span>
+              </div>
+              <span class="panel-tag"><i class="live-dot" aria-hidden="true"></i>Online</span>
+            </div>
+            <div class="bay-feed" aria-live="off"></div>
+          </div>
+        </article>
+
+        <article class="ai-row">
+          <div class="ai-meta">
+            <span class="ai-num">02</span>
+            <span class="ai-only">✦ Only on COMB</span>
+            <span class="ai-kind">AI design assistant</span>
+          </div>
+          <div class="ai-body">
+            <h3 class="ai-name">Studio</h3>
+            <p>
+              Help clients explore hairstyles and shade ideas visually before the service starts, making
+              consultations more confident and more premium.
+            </p>
+            <ul class="ai-list">
+              <li>Haircut and colour previews</li>
+              <li>Lookbook style exploration</li>
+              <li>More confident customer decisions</li>
+            </ul>
+          </div>
+          <!-- illustrative demo: try shades and styles on a client preview -->
+          <div class="panel studio-panel">
+            <div class="panel-head">
+              <div class="panel-who">
+                <strong>COMB Studio</strong>
+                <span>AI design assistant</span>
+              </div>
+              <span class="panel-tag"><i class="live-dot" aria-hidden="true"></i>Live preview</span>
+            </div>
+            <div class="studio-stage">
+              <!-- free photos from Unsplash; MediaPipe hair masks let the shade tint only the hair -->
+              <figure class="studio-photo" data-style="waves" style="--mask: url(../images/studio/waves-hair.png)">
+                <img src="../images/studio/waves.jpg" alt="Model with long wavy hair" width="640" height="640" loading="lazy" decoding="async" />
+                <span class="hair-deep" aria-hidden="true"></span>
+                <span class="hair-tint" aria-hidden="true"></span>
+                <span class="hair-lift" aria-hidden="true"></span>
+              </figure>
+              <figure class="studio-photo" data-style="bob" style="--mask: url(../images/studio/bob-hair.png)">
+                <img src="../images/studio/bob.jpg" alt="Model with a bob haircut" width="640" height="640" loading="lazy" decoding="async" />
+                <span class="hair-deep" aria-hidden="true"></span>
+                <span class="hair-tint" aria-hidden="true"></span>
+                <span class="hair-lift" aria-hidden="true"></span>
+              </figure>
+              <figure class="studio-photo" data-style="pixie" style="--mask: url(../images/studio/pixie-hair.png)">
+                <img src="../images/studio/pixie.jpg" alt="Model with a pixie cut" width="640" height="640" loading="lazy" decoding="async" />
+                <span class="hair-deep" aria-hidden="true"></span>
+                <span class="hair-tint" aria-hidden="true"></span>
+                <span class="hair-lift" aria-hidden="true"></span>
+              </figure>
+              <p class="studio-caption" aria-live="polite"></p>
+            </div>
+            <div class="studio-controls">
+              <div class="studio-row">
+                <span>Shade</span>
+                <div class="studio-shades" role="group" aria-label="Hair shade">
+                  <button class="shade shade-natural" data-name="Natural colour" aria-label="Natural colour"></button>
+                  <button class="shade" style="--c: #3a2219; --l: #6e4532" data-deep="#7a5a4c" data-name="Espresso" aria-label="Espresso"></button>
+                  <button class="shade" style="--c: #a3461f; --l: #d9773c" data-deep="#e6b8a0" data-name="Copper" aria-label="Copper"></button>
+                  <button class="shade" style="--c: #b39466; --l: #ecd2a4" data-deep="#ffffff" data-name="Honey blonde" aria-label="Honey blonde"></button>
+                  <button class="shade" style="--c: #b76e79; --l: #eba9ab" data-deep="#f2d4d4" data-name="Rose gold" aria-label="Rose gold"></button>
+                  <button class="shade" style="--c: #4b2346; --l: #8a4a7d" data-deep="#b892b0" data-name="Plum" aria-label="Plum"></button>
+                </div>
+              </div>
+              <div class="studio-row">
+                <span>Style</span>
+                <div class="studio-styles" role="group" aria-label="Hairstyle">
+                  <button class="style-btn" data-style="waves">Long waves</button>
+                  <button class="style-btn" data-style="bob">Bob</button>
+                  <button class="style-btn" data-style="pixie">Pixie</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- 4. WORKFLOW -->
+      <section class="workflow" id="workflow" aria-label="How COMB works">
+        <p class="eyebrow">— How COMB works</p>
+        <h2 class="stagger-title big">
+          <span class="line"><span>Book, know,</span></span>
+          <span class="line indent"><span>run, grow.</span></span>
+        </h2>
+        <p class="wf-sub">Built to fit the real rhythm of a salon.</p>
+        <ol class="wf-steps">
+          <li><span class="wf-rule"></span><span class="wf-n">01</span><h3>Book smarter</h3><p>Keep appointments organised, confirmed, and easy to reschedule.</p></li>
+          <li><span class="wf-rule"></span><span class="wf-n">02</span><h3>Know the customer</h3><p>Understand repeat visits, preferences, and who needs attention next.</p></li>
+          <li><span class="wf-rule"></span><span class="wf-n">03</span><h3>Run operations</h3><p>Coordinate staff, billing, and day-to-day tasks from one place.</p></li>
+          <li><span class="wf-rule"></span><span class="wf-n">04</span><h3>Grow the business</h3><p>Use AI insights to increase retention, revenue, and customer loyalty.</p></li>
+        </ol>
+      </section>
+
+      <!-- 5. CONTACT -->
+      <section class="contact" id="contact" aria-label="Contact">
+        <div class="contact-bg"><img src="img/hero.jpg" alt="" loading="lazy" /></div>
+        <div class="contact-inner">
+          <h2 class="contact-title" data-chars>Let's talk</h2>
+          <p class="contact-copy">See how COMB can give your salon more time, more clarity, and more growth.</p>
+          <a class="contact-cta" href="mailto:hello@comb.app">Request a demo ↗</a>
+        </div>
+        <footer class="foot">
+          <span>© 2026 COMB</span>
+          <nav aria-label="Footer">
+            <a href="#">Instagram</a>
+            <a href="#">LinkedIn</a>
+            <a href="mailto:hello@comb.app">Contact</a>
+          </nav>
+          <span class="credits">
+            Photos on Unsplash: Ionela Mat, Mustafa Sheikhmouss, Avin Ezzati, Michael Guertin, ola szkolda, Janko Ferlič
+          </span>
+        </footer>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
