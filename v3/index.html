@@ -70,34 +70,73 @@
 
     <div class="progress" aria-hidden="true"><span></span></div>
 
-    <!-- the wooden comb: one object that travels through the opening scenes -->
-    <div class="comb-stage" aria-hidden="true">
-      <div class="comb-move">
-        <div class="comb-tilt">
-          <svg class="comb" viewBox="0 0 640 230">
-            <defs>
-              <linearGradient id="wood" x1="0" y1="0" x2="0.15" y2="1">
-                <stop offset="0" stop-color="#e09257" />
-                <stop offset="0.45" stop-color="#bf6a30" />
-                <stop offset="1" stop-color="#8d4519" />
-              </linearGradient>
-              <filter id="grain" x="0" y="0" width="100%" height="100%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.0035 0.16" numOctaves="3" seed="11" result="noise" />
-                <feColorMatrix
-                  in="noise"
-                  type="matrix"
-                  values="0 0 0 0 0.24  0 0 0 0 0.1  0 0 0 0 0.02  0 0 0 0.7 -0.05"
-                  result="lines"
-                />
-                <feComposite in="lines" in2="SourceGraphic" operator="in" result="clipped" />
-                <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="clipped" /></feMerge>
-              </filter>
-            </defs>
-            <path class="comb-depth" fill="#4a2410" transform="translate(5 9)" />
-            <path class="comb-body" fill="url(#wood)" filter="url(#grain)" />
-            <path class="comb-shine" fill="none" stroke="rgba(255, 228, 196, 0.45)" stroke-width="2" stroke-linecap="round" />
-            <text class="comb-stamp" x="320" y="58" text-anchor="middle">COMB · SALON OS</text>
-          </svg>
+    <!-- The hero object: one object that travels through the opening scenes, in
+         three switchable looks (only the active one shows, see data-obj).
+         Each tells the chaos → calm story its own way in the "why" scene. -->
+    <div class="obj-stage" data-obj="card" aria-hidden="true">
+      <!-- the shadow follows the object but doesn't turn with it -->
+      <span class="obj-shadow"></span>
+      <div class="obj-move">
+        <div class="obj-tilt">
+          <div class="obj-lean">
+          <!-- 1. wooden comb: spins in the centre -->
+          <div class="obj comb3d" data-kind="comb">
+            <svg class="comb" viewBox="0 0 640 230">
+              <defs>
+                <linearGradient id="wood" x1="0" y1="0" x2="0.15" y2="1">
+                  <stop offset="0" stop-color="#e09257" />
+                  <stop offset="0.45" stop-color="#bf6a30" />
+                  <stop offset="1" stop-color="#8d4519" />
+                </linearGradient>
+                <filter id="grain" x="0" y="0" width="100%" height="100%">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.0035 0.16" numOctaves="3" seed="11" result="noise" />
+                  <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.24  0 0 0 0 0.1  0 0 0 0 0.02  0 0 0 0.7 -0.05" result="lines" />
+                  <feComposite in="lines" in2="SourceGraphic" operator="in" result="clipped" />
+                  <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="clipped" /></feMerge>
+                </filter>
+              </defs>
+              <path class="comb-depth" fill="#4a2410" transform="translate(5 9)" />
+              <path class="comb-body" fill="url(#wood)" filter="url(#grain)" />
+              <path class="comb-shine" d="M44 26 H596" fill="none" stroke="rgba(255, 228, 196, 0.45)" stroke-width="2" stroke-linecap="round" />
+              <text class="comb-stamp" x="320" y="58" text-anchor="middle">COMB · SALON OS</text>
+            </svg>
+          </div>
+
+          <!-- 2. appointment card: a scribbled paper card flips to a COMB confirmation -->
+          <div class="obj card3d" data-kind="card">
+            <div class="card-edges"></div>
+            <div class="card-face front">
+              <div class="card-paper">
+                <p class="card-title">Appointment</p>
+                <p class="card-line"><span>Name</span><em>Priya??</em></p>
+                <p class="card-line"><span>Date</span><em>Sat <s>3:00</s> 3:30?</em></p>
+                <p class="card-line"><span>Service</span><em>cut + colour (ask)</em></p>
+                <p class="card-line"><span>Paid</span><em class="h-red">?? call</em></p>
+              </div>
+            </div>
+            <div class="card-face back">
+              <div class="card-calm">
+                <p class="card-brand"><b>COMB</b><span>Booking confirmed ✓</span></p>
+                <p class="card-who">Priya · Cut &amp; colour</p>
+                <p class="card-when">Sat · 3:30 PM</p>
+                <p class="card-meta"><span>Paid ✓</span><span>Reminder sent</span><span>Stylist assigned</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- notifications that pop out of the card once it shows the COMB confirmation
+               (kept outside the card so they don't flip with it) -->
+          <div class="card-toasts">
+            <div class="toast t1"><i class="toast-icon ok">₹</i><div><b>Payment received</b><span>Priya · paid in full</span></div></div>
+            <div class="toast t2"><i class="toast-icon">⏰</i><div><b>Reminder sent</b><span>Sat · 3:30 PM</span></div></div>
+            <div class="toast t3"><i class="toast-icon">✂</i><div><b>Stylist assigned</b><span>Cut &amp; colour</span></div></div>
+          </div>
+
+          <!-- 3. hair strands: tangled at first, combed straight as you scroll -->
+          <div class="obj strands3d" data-kind="strands">
+            <svg class="strands-svg" viewBox="0 0 800 400"></svg>
+          </div>
+          </div>
         </div>
       </div>
     </div>
@@ -131,6 +170,16 @@
         </div>
 
         <a href="#why" class="scroll-cue mono"><span class="cue-ring" aria-hidden="true">⌄</span>Scroll to continue</a>
+
+        <!-- pick which object tells the story -->
+        <div class="obj-switch" role="group" aria-label="Hero object">
+          <span class="mono">Hero object</span>
+          <div class="obj-switch-row">
+            <button type="button" data-obj-pick="comb">Comb</button>
+            <button type="button" data-obj-pick="card">Card</button>
+            <button type="button" data-obj-pick="strands">Strands</button>
+          </div>
+        </div>
       </section>
 
       <!-- 2. WHY: the comb turns in the middle while the story lights up -->
@@ -158,20 +207,27 @@
       <section class="product" data-section="features">
         <p class="kicker mono">Built for the salon floor</p>
         <h2 class="product-title">One simple system<sup>*</sup></h2>
+        <div class="dash-wrap">
         <div class="dash" role="img" aria-label="COMB dashboard: today's revenue ₹42,800, up 8%, 64 bookings, 12 of 15 staff on duty">
-          <div class="dash-head mono"><span>Today</span><span class="badge">+8%</span></div>
+          <div class="dash-head mono"><span>Today</span><span class="badge"><i class="live-dot"></i>+8%</span></div>
           <p class="dash-label">Revenue</p>
-          <p class="dash-value">₹42,800</p>
+          <p class="dash-value">₹<span data-count="42800">42,800</span></p>
           <div class="dash-bars">
             <span style="--h: 32%"></span><span style="--h: 44%"></span><span style="--h: 60%"></span
             ><span style="--h: 52%"></span><span style="--h: 76%"></span><span style="--h: 92%"></span>
           </div>
           <div class="dash-stats">
-            <div><span>Bookings</span><strong>64</strong></div>
-            <div><span>Staff on duty</span><strong>12/15</strong></div>
+            <div><span>Bookings</span><strong data-count="64">64</strong></div>
+            <div><span>Staff on duty</span><strong><b data-count="12">12</b>/15</strong></div>
           </div>
           <p class="dash-alert"><i></i>3 clients at risk — Bay</p>
           <p class="dash-alert ok"><i></i>Slot 4:30 PM confirmed</p>
+        </div>
+        <!-- notifications that pop out of the dashboard as it arrives -->
+        <div class="dash-toasts" aria-hidden="true">
+          <div class="toast d1"><i class="toast-icon">✦</i><div><b>New booking</b><span>Sat · 3:30 PM</span></div></div>
+          <div class="toast d2"><i class="toast-icon ok">↗</i><div><b>Revenue +8%</b><span>vs last week</span></div></div>
+        </div>
         </div>
         <p class="product-note">Everything your salon needs to run smoothly.</p>
         <p class="footnote mono">* Appointments, customers, billing, staff and reports</p>

@@ -137,7 +137,7 @@ hr.dots {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* no z-index here on purpose: the mat (z 0), the travelling comb (z 1) and the
+/* no z-index here on purpose: the mat (z 0), the travelling object (z 1) and the
    hero text (z 3) need to stack against each other across these layers */
 main {
   position: relative;
@@ -330,33 +330,135 @@ main {
   opacity: 0.9;
 }
 
-/* ---------- the comb ---------- */
-.comb-stage {
+/* ---------- the hero object (three switchable looks) ---------- */
+.obj-stage {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   display: grid;
   place-items: center;
-  perspective: 1400px;
+  perspective: 1600px;
+  /* each look sets its own footprint */
+  --w: min(32vw, 470px);
+  --ratio: 1;
+  --shadow-radius: 50%;
 }
 
-.comb-move {
-  width: min(48vw, 680px);
-  will-change: transform;
+.obj-stage[data-obj='comb'] {
+  --w: min(46vw, 660px);
+  --ratio: 640 / 230;
+  --shadow-radius: 30px;
 }
 
-.comb-tilt {
+.obj-stage[data-obj='card'] {
+  --w: min(34vw, 500px);
+  --ratio: 1.6;
+  --shadow-radius: 22px;
+}
+
+.obj-stage[data-obj='strands'] {
+  --w: min(58vw, 860px);
+  --ratio: 2;
+}
+
+.obj-stage[data-obj='strands'] .obj-shadow {
+  display: none;
+}
+
+.obj-move,
+.obj-tilt,
+.obj-lean,
+.obj {
   transform-style: preserve-3d;
+}
+
+.obj-move {
+  grid-area: 1 / 1;
+  width: var(--w);
+  aspect-ratio: var(--ratio);
   will-change: transform;
 }
 
+.obj-tilt,
+.obj-lean,
+.obj {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.obj {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+.obj-stage[data-obj='comb'] .comb3d,
+.obj-stage[data-obj='card'] .card3d,
+.obj-stage[data-obj='strands'] .strands3d {
+  display: block;
+}
+
+/* sits in the same grid cell as the object, offset down-right like a cast shadow */
+.obj-shadow {
+  grid-area: 1 / 1;
+  width: calc(var(--w) * 0.88);
+  aspect-ratio: var(--ratio);
+  border-radius: var(--shadow-radius);
+  background: rgba(0, 0, 0, 0.7);
+  filter: blur(34px);
+  translate: 3% 10%;
+}
+
+/* the switcher */
+.obj-switch {
+  position: absolute;
+  right: var(--pad);
+  bottom: 28px;
+  z-index: 3;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  color: var(--cream-70);
+}
+
+.obj-switch-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.obj-switch button {
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px dashed var(--cream-45);
+  background: rgba(27, 21, 18, 0.5);
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.obj-switch button:hover,
+.obj-switch button[aria-pressed='true'] {
+  background: var(--cream);
+  border-color: var(--cream);
+  color: var(--bg);
+}
+
+/* comb */
 .comb {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   overflow: visible;
-  filter: drop-shadow(0 28px 34px rgba(0, 0, 0, 0.55)) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
 }
 
 .comb-stamp {
@@ -364,6 +466,231 @@ main {
   font-size: 13px;
   letter-spacing: 0.3em;
   fill: rgba(70, 30, 8, 0.55);
+}
+
+/* hair strands */
+.strands-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.strands-svg path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+/* appointment card */
+.card-edges span {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: #b9a684;
+  transform: translateZ(var(--z));
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  container-type: size;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.card-face.front {
+  transform: translateZ(5px);
+}
+
+.card-face.back {
+  transform: rotateY(180deg) translateZ(5px);
+  visibility: hidden;
+}
+
+.card-paper {
+  position: absolute;
+  inset: 0;
+  padding: 9cqh 9cqw;
+  background-color: #efe3cb;
+  background-image: repeating-linear-gradient(180deg, transparent 0, transparent calc(14cqh - 1px), rgba(70, 100, 160, 0.28) calc(14cqh - 1px), rgba(70, 100, 160, 0.28) 14cqh);
+  background-position: 0 6cqh;
+  color: #24346a;
+}
+
+.card-title {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 5.4cqw;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8d4519;
+  margin-bottom: 3cqh;
+}
+
+.card-line {
+  display: flex;
+  align-items: baseline;
+  gap: 4cqw;
+  height: 14cqh;
+}
+
+.card-line span {
+  width: 20cqw;
+  font-family: var(--mono);
+  font-size: 3cqw;
+  text-transform: uppercase;
+  color: rgba(36, 52, 106, 0.6);
+}
+
+.card-line em {
+  font-family: var(--serif);
+  font-size: 6.4cqw;
+  transform: rotate(-2deg);
+}
+
+.card-line s {
+  text-decoration-thickness: 2px;
+}
+
+.card-paper .h-red {
+  color: #b23a2e;
+}
+
+.card-calm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3cqh;
+  padding: 0 9cqw;
+  background: radial-gradient(circle at 20% 10%, #33271f, #17110e 75%);
+  color: var(--cream);
+}
+
+.card-brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 3.2cqw;
+  text-transform: uppercase;
+  color: #9be0b1;
+}
+
+.card-brand b {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 5cqw;
+  color: var(--cream);
+}
+
+.card-who {
+  margin-top: 4cqh;
+  font-weight: 700;
+  font-size: 7.4cqw;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.card-when {
+  font-weight: 600;
+  font-size: 5.6cqw;
+  color: var(--orange-2);
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2cqw;
+  margin-top: 3cqh;
+}
+
+.card-meta span {
+  padding: 1.4cqh 2.6cqw;
+  border-radius: 999px;
+  background: rgba(255, 237, 214, 0.08);
+  font-family: var(--mono);
+  font-size: 2.7cqw;
+  text-transform: uppercase;
+}
+
+/* notifications popping out of the card (only with the card look) */
+.card-toasts {
+  position: absolute;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+}
+
+.obj-stage[data-obj='card'] .card-toasts {
+  display: block;
+}
+
+.toast {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px 9px 9px;
+  border-radius: 14px;
+  background: rgba(36, 28, 24, 0.82);
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  white-space: nowrap;
+  opacity: 0;
+}
+
+.toast b {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.toast span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--cream-70);
+}
+
+.toast-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--orange);
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.toast-icon.ok {
+  background: #3f9b62;
+}
+
+/* where each one lands, just outside the card's edges */
+.toast.t1 {
+  right: -4%;
+  top: -16%;
+}
+
+.toast.t2 {
+  left: -3%;
+  bottom: -18%;
+}
+
+.toast.t3 {
+  right: 2%;
+  bottom: -33%;
 }
 
 /* ---------- 1. HERO ---------- */
@@ -375,7 +702,7 @@ main {
   overflow: hidden;
 }
 
-/* an appointment-book cutting mat for the comb to rest on */
+/* an appointment-book cutting mat for the object to rest on */
 .mat {
   position: absolute;
   left: 30%;
@@ -558,10 +885,20 @@ main {
 }
 
 /* ---------- 2. WHY ---------- */
+/* above the travelling object (z 1); it's transparent, so the object still shows
+   in the middle while the text stays on top of full-size strands */
 .why-stage {
   position: relative;
+  z-index: 2;
   height: 100vh;
   height: 100svh;
+}
+
+/* the why text sits above the travelling object (z 1), so full-size strands
+   can pass behind it */
+.why-title,
+.why-copy {
+  z-index: 3;
 }
 
 .why-title {
@@ -663,7 +1000,25 @@ sup {
 }
 
 .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--orange-2);
+}
+
+/* the dashboard and the notifications that pop out of it */
+.dash-wrap {
+  position: relative;
+}
+
+.dash-toasts .toast.d1 {
+  right: calc(100% + 18px);
+  top: 24%;
+}
+
+.dash-toasts .toast.d2 {
+  left: calc(100% + 18px);
+  bottom: 24%;
 }
 
 .dash-label {
@@ -1462,8 +1817,41 @@ sup {
     display: none;
   }
 
-  .comb-move {
-    width: 78vw;
+  .obj-stage {
+    --w: 66vw;
+  }
+
+  .obj-stage[data-obj='comb'] {
+    --w: 82vw;
+  }
+
+  .obj-stage[data-obj='card'] {
+    --w: 74vw;
+  }
+
+  .obj-stage[data-obj='strands'] {
+    --w: 96vw;
+  }
+
+  .obj-switch {
+    left: var(--pad);
+    right: var(--pad);
+    bottom: 14px;
+    justify-items: center;
+  }
+
+  .obj-switch > .mono {
+    display: none;
+  }
+
+  .obj-switch-row {
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .obj-switch button {
+    padding: 6px 9px;
+    font-size: 10px;
   }
 
   .mat {
@@ -1484,7 +1872,7 @@ sup {
 
   .hero-lead {
     top: auto;
-    bottom: 300px;
+    bottom: 244px;
     left: var(--pad);
     right: var(--pad);
     width: auto;
@@ -1509,8 +1897,9 @@ sup {
     display: none;
   }
 
+  /* the object switcher takes the scroll cue's spot on phones */
   .scroll-cue {
-    bottom: 16px;
+    display: none;
   }
 
   .why-title {
@@ -1602,6 +1991,17 @@ sup {
   .foot-row {
     flex-direction: column;
     align-items: center;
+  }
+
+  /* no room beside the dashboard on phones: the notifications overlap its corners */
+  .dash-toasts .toast.d1 {
+    right: -10px;
+    top: -8px;
+  }
+
+  .dash-toasts .toast.d2 {
+    left: -10px;
+    bottom: -24px;
   }
 }
 

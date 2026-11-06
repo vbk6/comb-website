@@ -1,6 +1,7 @@
 /* COMB v3: warm, object-led story.
-   A wooden comb rests on an appointment-book mat, then floats to the centre and
-   turns while the "why" lights up word by word. Features scroll normally, each
+   A hero object (comb, appointment card or hair strands) rests on an
+   appointment-book mat, then floats to the centre and tells chaos → calm
+   its own way while the "why" lights up word by word. Features scroll normally, each
    with an orange construction drawing; Bay and Studio run live; the workflow
    cards slide sideways; a scissors loader cuts through COMB at the start. */
 const { gsap, ScrollTrigger, Lenis } = window;
@@ -30,16 +31,20 @@ $$('a[href^="#"]').forEach((a) => {
   });
 });
 
-/* ---------- build the comb and the mat ---------- */
+/* ---------- build the objects and the mat ---------- */
+// stacked rings between the two faces give the card its thickness
+const rings = (n, step) => Array.from({ length: n }, (_, i) => `<span style="--z: ${(i - (n - 1) / 2) * step}px"></span>`).join('');
+$('.card-edges').innerHTML = rings(5, 2);
+
+// the wooden comb's outline: a rounded spine with alternating long and short teeth
 function combPath() {
   const L = 18, R = 622, T = 18, S = 86, B = 214, r = 22;
   const n = 34, x0 = 46, x1 = 594, tw = 9;
   const pitch = (x1 - x0) / (n - 1);
   let d = `M${L + r},${T} H${R - r} Q${R},${T} ${R},${T + r} V${S} `;
-  // along the bottom, right to left, down and up each tooth (rounded tips)
   for (let i = n - 1; i >= 0; i--) {
     const cx = x0 + i * pitch;
-    const tip = B - (i % 2 ? 0 : 6); // alternate long and short teeth
+    const tip = B - (i % 2 ? 0 : 6);
     d += `H${cx + tw / 2} V${tip - 5} Q${cx + tw / 2},${tip} ${cx},${tip} Q${cx - tw / 2},${tip} ${cx - tw / 2},${tip - 5} V${S} `;
   }
   return d + `H${L} V${T + r} Q${L},${T} ${L + r},${T} Z`;
@@ -47,7 +52,6 @@ function combPath() {
 const COMB_D = combPath();
 $('.comb-body').setAttribute('d', COMB_D);
 $('.comb-depth').setAttribute('d', COMB_D);
-$('.comb-shine').setAttribute('d', 'M44 26 H596');
 
 $('.mat-hours').innerHTML = Array.from({ length: 14 }, (_, i) => `<span>${String(8 + i).padStart(2, '0')}:00</span>`).join('');
 $('.mat-days').innerHTML = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((d) => `<span>${d}</span>`).join('');
@@ -61,19 +65,155 @@ $$('[data-words]').forEach((el) => {
     .join(' ');
 });
 
-/* ---------- the comb's journey ---------- */
-// where the comb rests in the hero, and where it floats to for the "why"
-const heroPose = () =>
-  isMobile()
-    ? { x: 0, y: -window.innerHeight * 0.11, rotation: -12, scale: 0.92 }
-    : { x: -window.innerWidth * 0.03, y: window.innerHeight * 0.06, rotation: -16, scale: 0.88 };
-const whyPose = () =>
-  isMobile()
-    ? { x: 0, y: -window.innerHeight * 0.04, rotation: -8, scale: 0.72 }
-    : { x: 0, y: 0, rotation: -90, scale: 0.8 };
+/* ---------- the hero object: five switchable looks ---------- */
+const OBJ_KEY = 'comb-v3-look';
+const OBJ_NAMES = ['comb', 'card', 'strands'];
+const stage = $('.obj-stage');
+let objName = 'card';
+try {
+  const saved = localStorage.getItem(OBJ_KEY);
+  if (OBJ_NAMES.includes(saved)) objName = saved;
+} catch (e) {}
+stage.dataset.obj = objName;
 
-function combJourney() {
-  gsap.set('.comb-move', heroPose());
+// Where each look rests in the hero and floats to for the "why":
+// [x in vw, y in vh, rotation in degrees, scale], plus phone versions (M).
+const POSES = {
+  comb: { hero: [-0.03, 0.06, -16, 0.88], heroM: [0, -0.11, -12, 0.92], why: [0, 0, -90, 0.8], whyM: [0, -0.04, -8, 0.72] },
+  card: { hero: [-0.025, 0.03, -8, 0.84], heroM: [0, -0.11, -6, 0.8], why: [0, 0, 0, 1], whyM: [0, -0.05, 0, 0.85] },
+  strands: { hero: [0.02, 0.06, -6, 1], heroM: [0, -0.1, -6, 1], why: [0, 0, 0, 1], whyM: [0, -0.04, 0, 1] },
+};
+const pose = (kind) => {
+  const [x, y, rotation, scale] = POSES[objName][kind + (isMobile() ? 'M' : '')];
+  return { x: x * window.innerWidth, y: y * window.innerHeight, rotation, scaleX: scale, scaleY: scale };
+};
+
+// Strands bridge the content on the left to the content on the right: in the
+// hero from the headline card up to the lead paragraph, in the "why" from the
+// headline across to the paragraph. They stretch (and tilt) to span exactly
+// that distance: in the hero tucked just under each block, in the "why"
+// stopping just short of each.
+const BRIDGES = {
+  hero: { from: '.hero-card', to: '.hero-lead', section: '.hero' },
+  why: { from: '.why-title', to: '.why-copy', section: '.why-stage' },
+};
+function strandBridge(kind) {
+  const { from, to, section } = BRIDGES[kind];
+  const top = $(section).getBoundingClientRect().top; // positions relative to the section, whatever the scroll
+  const a = $(from).getBoundingClientRect();
+  const b = $(to).getBoundingClientRect();
+  const x1 = a.right;
+  // in the hero, leave from near the top of the headline card for a gentler slope
+  const y1 = (kind === 'hero' ? a.top + Math.min(40, a.height / 4) : (a.top + a.bottom) / 2) - top;
+  const x2 = b.left;
+  const y2 = (b.top + b.bottom) / 2 - top;
+  // hero: tuck the ends just under each block; why: stop short so even tangled tips stay clear
+  const tuck = kind === 'hero' ? 18 : -28;
+  const length = Math.hypot(x2 - x1, y2 - y1) + tuck * 2;
+  const drawn = $('.obj-move').offsetWidth * 0.9; // the strands fill 90% of their box
+  return {
+    x: (x1 + x2) / 2 - window.innerWidth / 2,
+    y: (y1 + y2) / 2 - window.innerHeight / 2,
+    rotation: (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI,
+    scaleX: length / drawn,
+    scaleY: kind === 'why' ? 0.9 : 0.8,
+  };
+}
+
+const heroPose = () => (objName === 'strands' && !isMobile() ? strandBridge('hero') : pose('hero'));
+
+// In the "why" the object sits between the headline (left) and the paragraph
+// (right), so cap its on-screen size to that middle gap, with breathing room.
+// A quarter-turned object (the comb) is as wide as it is normally tall.
+const whyPose = () => {
+  const p = pose('why');
+  if (isMobile()) return p;
+  if (objName === 'strands') return strandBridge('why');
+  const el = $('.obj-move');
+  const sideways = Math.abs(p.rotation) % 180 === 90;
+  const w = sideways ? el.offsetHeight : el.offsetWidth;
+  const h = sideways ? el.offsetWidth : el.offsetHeight;
+  // the gap between the end of the headline and the start of the paragraph
+  const margin = 40;
+  const left = $('.why-title').getBoundingClientRect().right + margin;
+  const right = $('.why-copy').getBoundingClientRect().left - margin;
+  const room = Math.min((right - left) / w, (window.innerHeight * 0.72) / h);
+  const s = Math.min(p.scaleX, room);
+  return { ...p, x: (left + right) / 2 - window.innerWidth / 2, scaleX: s, scaleY: s };
+};
+
+// Card: show whichever face points at the viewer. Browsers don't
+// reliably hide a face's back when it holds layered children, so swap them
+// ourselves once the object passes edge-on.
+function faceSync(sel) {
+  const front = $(`${sel} .front`);
+  const back = $(`${sel} .back`);
+  return () => {
+    const turned = Math.abs(gsap.getProperty(sel, 'rotationY')) % 360;
+    const showBack = turned > 90 && turned < 270;
+    front.style.visibility = showBack ? 'hidden' : 'visible';
+    back.style.visibility = showBack ? 'visible' : 'hidden';
+  };
+}
+const syncCard = faceSync('.card3d');
+
+// Hair strands: tangled curls that a comb sweeps straight from left to right.
+// comb = 0 (all tangled) to 1 (all combed into one smooth flowing wave).
+const strands = { comb: 0 };
+const STRAND_COLORS = ['#e8a25f', '#c8763a', '#8d4519', '#f3c08a', '#b8632c'];
+const STRAND_DATA = Array.from({ length: 44 }, (_, i) => ({
+  y: 150 + i * 2.6 + (Math.random() - 0.5) * 8,
+  seed: Math.random() * 100,
+  amp: 22 + Math.random() * 34,
+  freq: 1.4 + Math.random() * 2.4,
+  len: 0.78 + Math.random() * 0.22,
+  off: Math.random(),
+}));
+const strandSvg = $('.strands-svg');
+strandSvg.innerHTML = STRAND_DATA.map(
+  (s, i) => `<path stroke="${STRAND_COLORS[i % STRAND_COLORS.length]}" stroke-width="${(1 + Math.random() * 1.8).toFixed(2)}" stroke-opacity="${(0.65 + Math.random() * 0.35).toFixed(2)}" />`
+).join('');
+const strandPaths = $$('path', strandSvg);
+
+function strandD(s, t) {
+  const P = 16;
+  const pts = [];
+  const edge = strands.comb * 1.35 - 0.2; // where the comb has reached, left to right
+  for (let k = 0; k < P; k++) {
+    const u = k / (P - 1);
+    const x = 40 + (u * s.len + s.off * (1 - s.len)) * 720;
+    const neatY = s.y + Math.sin(u * Math.PI * 1.8 + 0.6) * 36;
+    const swell = 0.35 + 0.65 * Math.sin(u * Math.PI);
+    const messyY = neatY + Math.sin(u * s.freq * Math.PI * 2 + s.seed + t * 0.6) * s.amp * swell + Math.cos(u * 7 + s.seed * 1.3 + t * 0.4) * s.amp * 0.35;
+    const messyX = x + Math.cos(u * s.freq * 5 + s.seed + t * 0.5) * 16 * swell;
+    const c = Math.min(1, Math.max(0, (edge - u) / 0.18 + 0.5));
+    pts.push([messyX + (x - messyX) * c, messyY + (neatY - messyY) * c]);
+  }
+  // smooth curve through the points (Catmull-Rom → cubic Béziers)
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let k = 0; k < P - 1; k++) {
+    const p0 = pts[k - 1] || pts[k];
+    const p1 = pts[k];
+    const p2 = pts[k + 1];
+    const p3 = pts[k + 2] || p2;
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+function drawStrands(t = 0) {
+  STRAND_DATA.forEach((s, i) => strandPaths[i].setAttribute('d', strandD(s, t)));
+}
+drawStrands();
+// the tangles drift gently while the strands are showing
+const strandTick = (time) => {
+  if (objName === 'strands' && stage.style.opacity !== '0') drawStrands(time);
+};
+if (!reduceMotion) gsap.ticker.add(strandTick);
+
+function objectJourney() {
+  gsap.set('.obj-move, .obj-shadow', heroPose());
 
   // hero → centre of the "why"
   gsap
@@ -88,14 +228,18 @@ function combJourney() {
       },
     })
     .fromTo(
-      '.comb-move',
-      { x: () => heroPose().x, y: () => heroPose().y, rotation: () => heroPose().rotation, scale: () => heroPose().scale },
-      { x: () => whyPose().x, y: () => whyPose().y, rotation: () => whyPose().rotation, scale: () => whyPose().scale, ease: 'power1.inOut' }
+      '.obj-move, .obj-shadow',
+      { x: () => heroPose().x, y: () => heroPose().y, rotation: () => heroPose().rotation, scaleX: () => heroPose().scaleX, scaleY: () => heroPose().scaleY },
+      { x: () => whyPose().x, y: () => whyPose().y, rotation: () => whyPose().rotation, scaleX: () => whyPose().scaleX, scaleY: () => whyPose().scaleY, ease: 'power1.inOut' }
     )
     .to('.mat', { opacity: 0.25, scale: 1.08, ease: 'none' }, 0)
     .to('.hero-word', { yPercent: -40, opacity: 0, ease: 'none' }, 0);
 
-  // pinned "why": the comb turns while the words light up, then it lifts away
+  syncCard();
+
+  // pinned "why": each look tells chaos → calm its own way while the words
+  // light up, then it lifts away. All three run on the same scroll; only the
+  // active one is visible.
   const why = gsap.timeline({
     defaults: { ease: 'none' },
     scrollTrigger: {
@@ -108,18 +252,47 @@ function combJourney() {
     },
   });
   why
-    .to('.comb-move', { rotationY: 360, duration: 3 }, 0)
-    .fromTo('.why-title span', { opacity: 0, y: 30 }, { opacity: 1, y: 0, stagger: 0.25, duration: 0.5 }, 0)
+    .fromTo('.why-title .wt-a', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, 0)
+    // a slight hold on the "chaos", then the turn to "calm"
+    .to('.card3d', { rotationY: 180, duration: 1.6, ease: 'power2.inOut', onUpdate: syncCard }, 0.6)
+    // once the card shows the confirmation, notifications pop out of it one by one
+    .fromTo('.toast.t1', { opacity: 0, scale: 0.5, x: -50, y: 50 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.45, ease: 'back.out(1.7)' }, 1.95)
+    .fromTo('.toast.t2', { opacity: 0, scale: 0.5, x: 50, y: -50 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.45, ease: 'back.out(1.7)' }, 2.2)
+    .fromTo('.toast.t3', { opacity: 0, scale: 0.5, x: -40, y: -60 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.45, ease: 'back.out(1.7)' }, 2.45)
+    .to('.comb3d', { rotationY: 360, duration: 1.8, ease: 'power1.inOut' }, 0.5)
+    .to(strands, { comb: 1, duration: 1.8, ease: 'power1.inOut', onUpdate: () => reduceMotion && drawStrands() }, 0.5)
+    .fromTo('.why-title .wt-b', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, 1.4)
     .to('.why-copy .w', { opacity: 1, stagger: 0.05, duration: 0.2 }, 0.3)
-    .to('.comb-move', { y: () => -window.innerHeight * 0.9, opacity: 0, duration: 0.8, ease: 'power2.in' }, 3);
+    // fade the stage, not the object: fading the object would flatten its 3D
+    .to('.obj-move, .obj-shadow', { y: () => -window.innerHeight * 0.9, duration: 0.8, ease: 'power2.in' }, 3.5)
+    .to('.obj-stage', { opacity: 0, duration: 0.6, ease: 'power1.in' }, 3.7);
 }
 
-// the comb leans toward the pointer while it rests in the hero
-function combTilt() {
+// switching looks: swap the object, re-measure the scroll scenes for its poses,
+// and let it pop in
+function setObject(name, animate = true) {
+  objName = name;
+  stage.dataset.obj = name;
+  try {
+    localStorage.setItem(OBJ_KEY, name);
+  } catch (e) {}
+  $$('[data-obj-pick]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.objPick === name)));
+  drawStrands();
+  ScrollTrigger.refresh();
+  if (animate && !reduceMotion) {
+    gsap.fromTo('.obj-lean', { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, ease: 'expo.out', clearProps: 'opacity' });
+  }
+}
+$$('[data-obj-pick]').forEach((b) => {
+  b.setAttribute('aria-pressed', String(b.dataset.objPick === objName));
+  b.addEventListener('click', () => b.dataset.objPick !== objName && setObject(b.dataset.objPick));
+});
+
+// the object leans toward the pointer while it rests in the hero
+function objectTilt() {
   if (reduceMotion || !window.matchMedia('(hover: hover)').matches) return;
-  const rx = gsap.quickTo('.comb', 'rotationX', { duration: 0.8, ease: 'power3' });
-  const ry = gsap.quickTo('.comb', 'rotationY', { duration: 0.8, ease: 'power3' });
-  gsap.set('.comb', { transformPerspective: 900 });
+  const rx = gsap.quickTo('.obj-lean', 'rotationX', { duration: 0.8, ease: 'power3' });
+  const ry = gsap.quickTo('.obj-lean', 'rotationY', { duration: 0.8, ease: 'power3' });
   window.addEventListener('pointermove', (e) => {
     const nx = e.clientX / window.innerWidth - 0.5;
     const ny = e.clientY / window.innerHeight - 0.5;
@@ -181,7 +354,7 @@ function loader() {
 function intro() {
   return gsap
     .timeline({ defaults: { ease: 'expo.out' } })
-    .from('.comb-tilt', { y: () => -window.innerHeight * 0.7, rotation: -40, opacity: 0, duration: 1.6, ease: 'power3.out' }, 0)
+    .from('.obj-tilt', { y: () => -window.innerHeight * 0.5, rotationX: 65, scale: 0.8, opacity: 0, duration: 1.7, ease: 'power3.out' }, 0)
     .from('.mat', { opacity: 0, scale: 1.06, duration: 1.4 }, 0)
     .from('.hero-word', { yPercent: 60, opacity: 0, duration: 1.4 }, 0.2)
     .from('.hero-kicker, .nav', { opacity: 0, y: -10, duration: 1 }, 0.4)
@@ -190,16 +363,67 @@ function intro() {
     .from('.scroll-cue', { opacity: 0, duration: 1 }, 1);
 }
 
+// reveals that replay every time their section comes into view (from either
+// direction) and reset once it's fully off screen, ready to play again
+const REPLAY = { end: 'bottom top', toggleActions: 'restart reset restart reset' };
+
+// count each [data-count] element up from zero to its number (Indian digit grouping)
+function countUp(selector, duration) {
+  const tl = gsap.timeline();
+  $$(selector).forEach((el) => {
+    const target = Number(el.dataset.count);
+    const state = { v: 0 };
+    tl.to(
+      state,
+      {
+        v: target,
+        duration,
+        ease: 'power2.out',
+        onStart: () => (el.textContent = '0'),
+        onUpdate: () => (el.textContent = Math.round(state.v).toLocaleString('en-IN')),
+      },
+      0
+    );
+  });
+  return tl;
+}
+
 /* ---------- sections ---------- */
 function reveals() {
   // product
   gsap
-    .timeline({ scrollTrigger: { trigger: '.product', start: 'top 70%' }, defaults: { ease: 'expo.out' } })
+    // replays every time the section comes into view (from either direction), and
+    // resets once it's fully off screen so it's ready to play again
+    .timeline({
+      scrollTrigger: { trigger: '.product', start: 'top 70%', end: 'bottom top', toggleActions: 'restart reset restart reset' },
+      defaults: { ease: 'expo.out' },
+    })
     .from('.product .kicker', { opacity: 0, y: 14, duration: 0.8 })
     .from('.product-title', { yPercent: 30, opacity: 0, duration: 1.2 }, 0.05)
     .from('.dash', { y: 80, rotation: -4, opacity: 0, duration: 1.4 }, 0.2)
     .fromTo('.dash-bars span', { scaleY: 0 }, { scaleY: 1, stagger: 0.07, duration: 0.9, ease: 'power3.out' }, 0.6)
+    // the numbers count up as the card lands
+    .add(countUp('.dash [data-count]', 1.6), 0.5)
+    .from('.dash-alert', { opacity: 0, x: -20, stagger: 0.25, duration: 0.8, ease: 'power3.out' }, 1.2)
+    // then two notifications pop out of the card
+    .fromTo('.toast.d1', { opacity: 0, scale: 0.5, x: 60 }, { opacity: 1, scale: 1, x: 0, duration: 0.7, ease: 'back.out(1.7)' }, 1.6)
+    .fromTo('.toast.d2', { opacity: 0, scale: 0.5, x: -60 }, { opacity: 1, scale: 1, x: 0, duration: 0.7, ease: 'back.out(1.7)' }, 2)
     .from('.product-note, .product .footnote', { opacity: 0, y: 20, duration: 1, stagger: 0.1 }, 0.7);
+
+  // a live feel: the bars keep shifting gently and the notifications bob, only while on screen
+  if (!reduceMotion) {
+    const live = gsap.timeline({ paused: true, repeat: -1, repeatRefresh: true });
+    $$('.dash-bars span').forEach((bar, i) => {
+      live.to(bar, { scaleY: () => gsap.utils.random(0.82, 1.06), duration: 1.4, ease: 'sine.inOut', yoyo: true, repeat: 1 }, i * 0.18);
+    });
+    gsap.to('.dash-toasts .toast', { y: -6, duration: 2.2, ease: 'sine.inOut', yoyo: true, repeat: -1, stagger: 0.6, delay: 3 });
+    ScrollTrigger.create({
+      trigger: '.dash',
+      start: 'top 70%',
+      end: 'bottom top',
+      onToggle: (self) => (self.isActive ? gsap.delayedCall(2.4, () => live.play()) : live.pause()),
+    });
+  }
 
   // features: each drawing sketches itself in as it arrives
   $$('.feat').forEach((feat) => {
@@ -222,12 +446,12 @@ function reveals() {
 
   // AI
   gsap
-    .timeline({ scrollTrigger: { trigger: '.ai', start: 'top 70%' }, defaults: { ease: 'expo.out' } })
+    .timeline({ scrollTrigger: { trigger: '.ai', start: 'top 70%', ...REPLAY }, defaults: { ease: 'expo.out' } })
     .from('.ai .kicker', { opacity: 0, y: 14, duration: 0.8 })
     .from('.ai-title', { yPercent: 25, opacity: 0, duration: 1.2 }, 0.05)
     .from('.ai-sub', { opacity: 0, y: 18, duration: 1 }, 0.25);
   $$('.ai-card').forEach((card) => {
-    gsap.from(card, { y: 70, opacity: 0, duration: 1.3, ease: 'expo.out', scrollTrigger: { trigger: card, start: 'top 85%' } });
+    gsap.from(card, { y: 70, opacity: 0, duration: 1.3, ease: 'expo.out', scrollTrigger: { trigger: card, start: 'top 85%', ...REPLAY } });
   });
 
   // workflow: the cards slide sideways while the section holds (desktop)
@@ -248,7 +472,7 @@ function reveals() {
       },
     });
   });
-  gsap.from('.flow-head > *', { opacity: 0, y: 24, stagger: 0.1, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: '.flow', start: 'top 70%' } });
+  gsap.from('.flow-head > *', { opacity: 0, y: 24, stagger: 0.1, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: '.flow', start: 'top 70%', ...REPLAY } });
 
   // contact: the line lights up as you reach it
   gsap.to('.contact-title .w', {
@@ -257,7 +481,7 @@ function reveals() {
     ease: 'none',
     scrollTrigger: { trigger: '.contact-title', start: 'top 80%', end: 'bottom 45%', scrub: true },
   });
-  gsap.from('.foot-word', { yPercent: 40, opacity: 0, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: '.foot', start: 'top 90%' } });
+  gsap.from('.foot-word', { yPercent: 40, opacity: 0, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: '.foot', start: 'top 90%', ...REPLAY } });
 }
 
 /* ---------- nav state + progress ---------- */
@@ -421,8 +645,8 @@ function studioDemo() {
 /* ---------- start ---------- */
 (document.fonts?.ready ?? Promise.resolve()).then(() => {
   window.scrollTo(0, 0);
-  combJourney();
-  combTilt();
+  objectJourney();
+  objectTilt();
   reveals();
   chrome();
   bayDemo();
