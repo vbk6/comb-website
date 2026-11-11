@@ -135,13 +135,6 @@ const THEMES = {
     stars: '#f6dcd2',
     light: false,
   },
-  sage: {
-    bg: '#0b1210',
-    primary: '#8fcfa8',
-    accent: '#f0a27a',
-    stars: '#dcefe2',
-    light: false,
-  },
   blush: {
     bg: '#faf3ee',
     primary: '#d6587e',
@@ -149,18 +142,11 @@ const THEMES = {
     stars: '#d6587e',
     light: true,
   },
-  candy: {
-    bg: '#fff8fc',
-    primary: '#ff2e88',
-    accent: '#00a9b8',
-    stars: '#ff2e88',
-    light: true,
-  },
-  midnight: {
-    bg: '#050b18',
-    primary: '#8a72ff',
-    accent: '#79f0d5',
-    stars: '#bfccff',
+  ember: {
+    bg: '#1b1512',
+    primary: '#e8692c',
+    accent: '#ffc98f',
+    stars: '#ffedd6',
     light: false,
   },
 };
@@ -530,7 +516,7 @@ const sfx = (() => {
   const speakable = (text) =>
     text.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/…/g, '...').replace(/\s+/g, ' ').trim();
 
-  // ---- recorded voice clips (Kokoro "am_echo"; see tools/voice/README.md) ----
+  // ---- recorded voice clips (ElevenLabs "Liam"; see tools/voice/README.md) ----
   // Each line's clip is named after a hash of its exact text, so an edited line
   // without a new recording simply falls back to the browser voice.
   const fnv1a = (text) => {
@@ -669,17 +655,14 @@ const sfx = (() => {
 })();
 
 /* ------------------------------------------------------------------ */
-/* Comby, the guide that hops to each section, in two looks (comb and  */
-/* hairbrush). Both SVGs share part classes, so one controller drives  */
-/* either; each rig only adds its joints, mouth shapes, lines and      */
-/* little extras.                                                      */
+/* Comby, the guide that hops to each section as you scroll. The rig   */
+/* holds the joints, mouth shapes, lines and little extras.            */
 /* ------------------------------------------------------------------ */
 const comby = (() => {
   const el = document.querySelector('.comby');
   const hop = el.querySelector('.comby-hop');
   const hit = el.querySelector('.comby-hit');
   const bubble = el.querySelector('.comby-bubble');
-  const guideButtons = document.querySelectorAll('[data-guide-option]');
 
   const RIGS = {
     comby: {
@@ -702,7 +685,7 @@ const comby = (() => {
         why: 'Hmm… less admin, more calm. I like that.',
         product: "Here's your whole salon day at a glance!",
         features: 'Everything your salon needs. Follow me!',
-        ai: 'Psst… meet my smart friends, Bay and COMB Studio!',
+        ai: "Psst… I'm your AI business advisor too! And meet COMB Studio.",
         workflow: 'Book, know, run, grow. Step by step.',
         cta: "Let's talk! Book your demo 🎉",
         click: 'Hehe, that tickles! 😄',
@@ -715,49 +698,6 @@ const comby = (() => {
         gsap.to(svg.querySelector('.cb-tuft'), { rotation: 12, duration: 0.7, ease: 'sine.inOut', yoyo: true, repeat: -1 });
       },
       flourish: () => gsap.timeline(),
-    },
-    brush: {
-      label: 'Comby (hairbrush)',
-      voice: { pitch: 0.9, rate: 1.0, volume: 0.5, base: 430, type: 'sine' },
-      joints: { armL: '69 122', armR: '91 122', legL: '74.5 156', legR: '85.5 156', eyeL: '64 72', eyeR: '96 72' },
-      thinkArm: 160, // the arm swings up over the shoulder to reach the chin
-      stride: 18,
-      eyeY: 0.36,
-      look: 4,
-      mouth: {
-        smile: 'M71 91 Q80 100 89 91',
-        grin: 'M68 90 Q80 106 92 90',
-        think: 'M73 95 Q80 93 87 95',
-        ooh: 'M76 93 Q80 99 84 93',
-      },
-      lines: {
-        hello: "Hi, I'm Comby! ✨",
-        hero: "Hi, I'm Comby! ✨ Let's smooth things out.",
-        why: 'No more tangles in your day. Ahh, calm.',
-        product: 'Smooth numbers, smooth day!',
-        features: 'Brush up on every feature. This way!',
-        ai: 'Bay and COMB Studio? Brilliant brains!',
-        workflow: 'Book, know, run, grow. Nice and smooth.',
-        cta: "Let's make your salon shine! Book a demo ✨",
-        click: 'Ooh, that tickles my bristles! 😄',
-      },
-      // bristles sway like hair in a breeze
-      idle: (svg) => {
-        const bristles = svg.querySelectorAll('.br-bristle');
-        gsap.set(bristles, { svgOrigin: '80 44' });
-        gsap.to(bristles, { rotation: 7, duration: 1, ease: 'sine.inOut', yoyo: true, repeat: -1, stagger: { each: 0.1, from: 'center' } });
-      },
-      // excited: bristles stand on end
-      flourish: () =>
-        gsap.to(svg.querySelectorAll('.br-bristle line, .br-bristle circle'), {
-          scaleY: 1.35,
-          svgOrigin: '80 44',
-          duration: 0.14,
-          yoyo: true,
-          repeat: 3,
-          ease: 'power2.out',
-          stagger: 0.02,
-        }),
     },
   };
 
@@ -784,7 +724,6 @@ const comby = (() => {
     });
     hit.setAttribute('aria-label', `${rig.label}, your guide. Click to say hi.`);
     if (sfx.on) sfx.preload(Object.values(rig.lines));
-    guideButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.guideOption === name)));
     gsap.set(svg, { scaleX: facing });
   }
 
@@ -874,12 +813,7 @@ const comby = (() => {
   let hinted = false;
   let lastLine = '';
   let lineBlocked = false;
-  let current = 'comby';
-  try {
-    const saved = localStorage.getItem('comb-guide');
-    if (RIGS[saved]) current = saved;
-  } catch (e) {}
-  useRig(current);
+  useRig('comby');
 
   const isMobile = () => window.innerWidth < 900;
 
@@ -1063,35 +997,6 @@ const comby = (() => {
     walkStopTimer = setTimeout(stopWalk, 200);
   };
 
-  // swap characters: the current one spins away, the new one pops in on the same spot
-  api.setCharacter = (name) => {
-    if (!RIGS[name] || name === current) return;
-    current = name;
-    try {
-      localStorage.setItem('comb-guide', name);
-    } catch (e) {}
-    if (!entered || prefersReducedMotion) {
-      useRig(name);
-      if (entered) say(rig.lines.hello, 2400);
-      return;
-    }
-    hideBubble();
-    stopWalk();
-    resetPose();
-    api.arrived = false;
-    gsap
-      .timeline()
-      .call(() => sfx.whoosh())
-      .to(hop, { scale: 0, rotation: 200, duration: 0.3, ease: 'back.in(1.6)' })
-      .add(() => useRig(name))
-      .set(hop, { rotation: -160 })
-      .call(() => sfx.pop())
-      .to(hop, { scale: 1, rotation: 0, duration: 0.6, ease: 'back.out(1.8)' })
-      .add(() => arrive(scene, anchor(scene), rig.lines.hello));
-  };
-
-  guideButtons.forEach((b) => b.addEventListener('click', () => api.setCharacter(b.dataset.guideOption)));
-
   sfx.onUnlock(() => {
     if (sfx.on && lineBlocked && lastLine) say(lastLine);
   });
@@ -1168,7 +1073,7 @@ const comby = (() => {
 })();
 
 /* ------------------------------------------------------------------ */
-/* AI demos: Bay's insight feed and COMB Studio's style preview.       */
+/* AI demos: Comby's insight feed and COMB Studio's style preview.     */
 /* Both only run while on screen.                                      */
 /* ------------------------------------------------------------------ */
 const whileVisible = (el, start, stop) => {

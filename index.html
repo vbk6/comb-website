@@ -27,7 +27,7 @@
       // apply the saved theme before first paint
       try {
         const saved = localStorage.getItem('comb-theme');
-        const themes = ['rose', 'sage', 'blush', 'candy', 'midnight'];
+        const themes = ['rose', 'blush', 'ember'];
         if (themes.includes(saved)) document.documentElement.dataset.theme = saved;
       } catch (e) {}
     </script>
@@ -78,9 +78,7 @@
       </div>
     </div>
 
-    <!-- Comby, the guide that hops to each section as you scroll, in two looks (comb and
-         hairbrush). Both share part classes (cb-arm-l, cb-leg-r, cb-eye, cb-mouth…) so one
-         controller can animate either; only the active one is shown. -->
+    <!-- Comby, the guide that hops to each section as you scroll. -->
     <div class="comby" aria-live="polite">
       <div class="comby-bubble" role="status"></div>
       <div class="comby-hop">
@@ -139,65 +137,6 @@
               </g>
             </g>
           </svg>
-          <svg class="comby-svg" data-guide="brush" viewBox="0 0 160 200" aria-hidden="true">
-            <defs>
-              <linearGradient id="brushHead" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" style="stop-color: var(--primary-2)" />
-                <stop offset="1" style="stop-color: var(--primary)" />
-              </linearGradient>
-            </defs>
-            <ellipse class="cb-shadow" cx="80" cy="195" rx="28" ry="5" />
-            <g class="cb-body">
-              <g class="cb-leg cb-leg-l">
-                <rect x="70" y="154" width="9" height="32" rx="4.5" />
-                <ellipse class="cb-foot" cx="72" cy="187" rx="10" ry="5.5" />
-              </g>
-              <g class="cb-leg cb-leg-r">
-                <rect x="81" y="154" width="9" height="32" rx="4.5" />
-                <ellipse class="cb-foot" cx="88" cy="187" rx="10" ry="5.5" />
-              </g>
-              <rect class="br-handle" x="67" y="104" width="26" height="56" rx="13" />
-              <rect class="br-band" x="67" y="138" width="26" height="6" />
-              <g class="br-bristles">
-                <g transform="rotate(-64 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-                <g transform="rotate(-48 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-                <g transform="rotate(-32 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-                <g transform="rotate(-16 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-                <g transform="rotate(0 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-                <g transform="rotate(16 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-                <g transform="rotate(32 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-                <g transform="rotate(48 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-                <g transform="rotate(64 80 74)"><g class="br-bristle"><line x1="80" y1="44" x2="80" y2="23" /><circle cx="80" cy="21.5" r="3.4" /></g></g>
-              </g>
-              <ellipse class="br-head" cx="80" cy="74" rx="46" ry="40" />
-              <ellipse class="br-gloss" cx="62" cy="50" rx="14" ry="6" transform="rotate(-20 62 50)" />
-              <g class="cb-arm cb-arm-l">
-                <path d="M69 122 Q57 130 52 146" />
-                <circle cx="52" cy="147" r="6" />
-              </g>
-              <g class="cb-arm cb-arm-r">
-                <path d="M91 122 Q103 130 108 146" />
-                <circle cx="108" cy="147" r="6" />
-              </g>
-              <g class="cb-face">
-                <ellipse class="cb-cheek" cx="54" cy="88" rx="7" ry="4" />
-                <ellipse class="cb-cheek" cx="106" cy="88" rx="7" ry="4" />
-                <g class="cb-eye cb-eye-l">
-                  <ellipse class="cb-white" cx="64" cy="72" rx="11" ry="12.5" />
-                  <g class="cb-pupil"><circle cx="64.5" cy="74" r="6.5" /><circle class="cb-glint" cx="67" cy="71" r="2.2" /></g>
-                </g>
-                <g class="cb-eye cb-eye-r">
-                  <ellipse class="cb-white" cx="96" cy="72" rx="11" ry="12.5" />
-                  <g class="cb-pupil"><circle cx="96.5" cy="74" r="6.5" /><circle class="cb-glint" cx="99" cy="71" r="2.2" /></g>
-                </g>
-                <g class="cb-sparkle">
-                  <path d="M64 62 L66.4 69.6 L74 72 L66.4 74.4 L64 82 L61.6 74.4 L54 72 L61.6 69.6Z" />
-                  <path d="M96 62 L98.4 69.6 L106 72 L98.4 74.4 L96 82 L93.6 74.4 L86 72 L93.6 69.6Z" />
-                </g>
-                <path class="cb-mouth" d="M71 91 Q80 100 89 91" />
-              </g>
-            </g>
-          </svg>
         </button>
       </div>
     </div>
@@ -218,28 +157,10 @@
 
         <div class="theme-switch" role="group" aria-label="Colour theme">
           <button class="swatch" data-theme-option="rose" aria-label="Rose gold theme" aria-pressed="false" style="--sw-a: #e58fa0; --sw-b: #f2c98a"></button>
-          <button class="swatch" data-theme-option="sage" aria-label="Sage spa theme" aria-pressed="false" style="--sw-a: #8fcfa8; --sw-b: #f0a27a"></button>
           <button class="swatch" data-theme-option="blush" aria-label="Blush light theme" aria-pressed="false" style="--sw-a: #faf3ee; --sw-b: #d6587e"></button>
-          <button class="swatch" data-theme-option="candy" aria-label="Candy bright theme" aria-pressed="false" style="--sw-a: #ff2e88; --sw-b: #00a9b8"></button>
-          <button class="swatch" data-theme-option="midnight" aria-label="Midnight theme" aria-pressed="false" style="--sw-a: #8a72ff; --sw-b: #79f0d5"></button>
+          <button class="swatch" data-theme-option="ember" aria-label="Ember theme" aria-pressed="false" style="--sw-a: #1b1512; --sw-b: #e8692c"></button>
         </div>
 
-        <div class="guide-switch" role="group" aria-label="Guide character">
-          <button class="guide-option" data-guide-option="comby" aria-label="Comby (comb)" aria-pressed="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="11" rx="5" fill="currentColor" />
-              <circle cx="9" cy="8.5" r="1.8" style="fill: var(--bg)" /><circle cx="15" cy="8.5" r="1.8" style="fill: var(--bg)" />
-              <path d="M7 14v6M10.3 14v7M13.7 14v7M17 14v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-            </svg>
-          </button>
-          <button class="guide-option" data-guide-option="brush" aria-label="Comby (hairbrush)" aria-pressed="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 6.5 3.6 4.6M8 4.8 7.2 2.6M12 4.2V1.8M16 4.8l.8-2.2M19 6.5l1.4-1.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              <ellipse cx="12" cy="10" rx="7.5" ry="6" fill="currentColor" />
-              <rect x="10" y="15" width="4" height="7.5" rx="2" fill="currentColor" />
-            </svg>
-          </button>
-        </div>
 
         <button class="sound-toggle" type="button" aria-pressed="false" aria-label="Comby's sound">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -268,25 +189,6 @@
         <a href="#workflow"><span>Workflow</span></a>
         <a href="#contact"><span>Contact</span></a>
       </nav>
-      <div class="menu-guide">
-        <span>Your guide</span>
-        <div class="guide-switch" role="group" aria-label="Guide character">
-            <button class="guide-option" data-guide-option="comby" aria-label="Comby (comb)" aria-pressed="false">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="11" rx="5" fill="currentColor" />
-                <circle cx="9" cy="8.5" r="1.8" style="fill: var(--bg)" /><circle cx="15" cy="8.5" r="1.8" style="fill: var(--bg)" />
-                <path d="M7 14v6M10.3 14v7M13.7 14v7M17 14v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              </svg>
-            </button>
-            <button class="guide-option" data-guide-option="brush" aria-label="Comby (hairbrush)" aria-pressed="false">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 6.5 3.6 4.6M8 4.8 7.2 2.6M12 4.2V1.8M16 4.8l.8-2.2M19 6.5l1.4-1.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                <ellipse cx="12" cy="10" rx="7.5" ry="6" fill="currentColor" />
-                <rect x="10" y="15" width="4" height="7.5" rx="2" fill="currentColor" />
-              </svg>
-            </button>
-        </div>
-      </div>
     </div>
 
     <main id="top" class="page-shell">
@@ -309,7 +211,7 @@
               </div>
               <a href="#ai" class="hero-spotlight">
                 <span class="spot-star" aria-hidden="true">✦</span>
-                <span>Only on COMB: <strong>Bay</strong> AI advisor &amp; <strong>COMB Studio</strong></span>
+                <span>Only on COMB: <strong>Comby</strong> AI advisor &amp; <strong>COMB Studio</strong></span>
                 <span class="spot-arrow" aria-hidden="true">→</span>
               </a>
             </div>
@@ -333,13 +235,13 @@
             <span>Appointments</span><i>✦</i><span>Customer intelligence</span><i>✦</i>
             <span>Billing &amp; payments</span><i>✦</i><span>Staff oversight</span><i>✦</i>
             <span>Reports &amp; insights</span><i>✦</i><span>WhatsApp center</span><i>✦</i>
-            <span class="marquee-hl">Bay AI advisor</span><i>✦</i><span class="marquee-hl">COMB Studio</span><i>✦</i>
+            <span class="marquee-hl">Comby AI advisor</span><i>✦</i><span class="marquee-hl">COMB Studio</span><i>✦</i>
           </div>
           <div class="marquee-row">
             <span>Appointments</span><i>✦</i><span>Customer intelligence</span><i>✦</i>
             <span>Billing &amp; payments</span><i>✦</i><span>Staff oversight</span><i>✦</i>
             <span>Reports &amp; insights</span><i>✦</i><span>WhatsApp center</span><i>✦</i>
-            <span class="marquee-hl">Bay AI advisor</span><i>✦</i><span class="marquee-hl">COMB Studio</span><i>✦</i>
+            <span class="marquee-hl">Comby AI advisor</span><i>✦</i><span class="marquee-hl">COMB Studio</span><i>✦</i>
           </div>
         </div>
       </section>
@@ -415,7 +317,7 @@
               </div>
 
               <div class="float-chip chip-a">
-                <span class="chip-dot"></span> 3 clients at risk — Bay
+                <span class="chip-dot"></span> 3 clients at risk — Comby
               </div>
               <div class="float-chip chip-b">
                 <span class="chip-dot teal"></span> Slot 4:30 PM confirmed
@@ -519,11 +421,11 @@
                       <span class="ai-only">✦ Only on COMB</span>
                     </div>
                     <div class="ai-label">AI BUSINESS ADVISOR</div>
-                    <h3>Bay</h3>
+                    <h3>Comby</h3>
                   </div>
                   <div class="ai-body">
                     <p>
-                      Bay reads salon data and flags what matters right now: revenue trends, inactive clients,
+                      Comby reads salon data and flags what matters right now: revenue trends, inactive clients,
                       staffing gaps, and performance opportunities.
                     </p>
                     <ul>
@@ -534,13 +436,13 @@
                   </div>
                 </div>
 
-                <!-- illustrative demo: Bay's insights appear one by one (filled in by script.js) -->
+                <!-- illustrative demo: Comby's insights appear one by one (filled in by script.js) -->
                 <div class="ai-demo bay-demo">
                   <div class="bay-panel">
                     <div class="bay-head">
-                      <span class="bay-avatar" aria-hidden="true">B</span>
+                      <span class="bay-avatar" aria-hidden="true"><svg viewBox="0 0 38 38"><path d="M19 9c1-4 6-4 5 0" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" /><circle cx="13.5" cy="17" r="4.4" fill="#fff" /><circle cx="24.5" cy="17" r="4.4" fill="#fff" /><circle cx="14.2" cy="17.6" r="2.1" fill="#2b1a1f" /><circle cx="25.2" cy="17.6" r="2.1" fill="#2b1a1f" /><path d="M15 23.5q4 3.4 8 0" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" /><path d="M11 28.5v3.5M15 28.5v4M19 28.5v4M23 28.5v4M27 28.5v3.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" /></svg></span>
                       <div>
-                        <strong>Bay</strong>
+                        <strong>Comby</strong>
                         <span><i class="bay-online" aria-hidden="true"></i>AI business advisor</span>
                       </div>
                     </div>
@@ -623,7 +525,6 @@
                         </div>
                       </div>
                       <p class="studio-caption" aria-live="polite"></p>
-                      <p class="studio-credit">Photos: Michael Guertin, ola szkolda, Janko Ferlič on Unsplash</p>
                     </div>
                   </div>
                 </div>
