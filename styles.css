@@ -2130,6 +2130,23 @@ h3 {
   position: relative;
 }
 
+/* 3D Comby: a WebGL model drawn over the (hidden) SVG rig that animates it */
+.comby-3d {
+  position: absolute;
+  left: -18.75%;
+  top: -11%;
+  width: 137.5%;
+  height: 118%;
+  pointer-events: none;
+  filter: drop-shadow(0 14px 22px rgba(var(--primary-rgb), 0.3));
+}
+.comby.is-3d .cb-body {
+  visibility: hidden;
+}
+.comby.is-3d .comby-svg {
+  filter: none;
+}
+
 .cb-shadow { fill: rgba(var(--text-rgb), 0.12); }
 .cb-spine { fill: url(#combyBody); }
 .cb-gloss { fill: rgba(255, 255, 255, 0.4); }

@@ -1073,6 +1073,280 @@ const comby = (() => {
 })();
 
 /* ------------------------------------------------------------------ */
+/* Comby in 3D. The SVG rig above keeps doing all the animating (walk, */
+/* poses, blinks, gaze, mouth shapes); its body is hidden and a        */
+/* Three.js model copies each part's pose every frame, so the guide    */
+/* gets real depth and lighting without a second animation system.    */
+/* Works in SVG units (viewBox 160x200) with y flipped.               */
+/* ------------------------------------------------------------------ */
+(() => {
+  const el = document.querySelector('.comby');
+  const svg = el?.querySelector('.comby-svg[data-guide="comby"]');
+  if (!svg) return;
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch (err) {
+    return; // no WebGL: the flat SVG Comby stays
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  const canvas = renderer.domElement;
+  canvas.className = 'comby-3d';
+  canvas.setAttribute('aria-hidden', 'true');
+  el.querySelector('.comby-hit').appendChild(canvas);
+  el.classList.add('is-3d');
+
+  // the canvas reaches past Comby's box so raised arms and the tuft never clip
+  const VIEW = { x0: -30, x1: 190, y0: -22, y1: 214 };
+  const camera = new THREE.OrthographicCamera(VIEW.x0, VIEW.x1, -VIEW.y0, -VIEW.y1, 1, 2000);
+  camera.position.set(0, 0, 600);
+  const scene = new THREE.Scene();
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a6a70, 1.4));
+  const key = new THREE.DirectionalLight(0xffffff, 2.4);
+  key.position.set(-120, 220, 300);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0xffffff, 1.6);
+  rim.position.set(260, 80, -200);
+  scene.add(rim);
+
+  // materials follow the colour theme
+  const glossy = (opts) => new THREE.MeshPhysicalMaterial({ roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.25, ...opts });
+  const mat = {
+    body: glossy({ vertexColors: true }),
+    limb: glossy({}),
+    accent: glossy({ roughness: 0.4 }),
+    white: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.15, clearcoat: 1 }),
+    ink: new THREE.MeshPhysicalMaterial({ color: 0x2a1b20, roughness: 0.2, clearcoat: 1 }),
+    glint: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+    cheek: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false }),
+    sparkle: glossy({ transparent: true, opacity: 0 }),
+  };
+
+  const P = (x, y, z = 0) => new THREE.Vector3(x, -y, z);
+  // a group whose origin is the given SVG point, so rotations match svgOrigin
+  const pivot = (parent, x, y, z = 0) => {
+    const [ox, oy] = parent.userData.origin || [0, 0];
+    const g = new THREE.Group();
+    g.position.copy(P(x - ox, y - oy, z));
+    g.userData.origin = [x, y];
+    parent.add(g);
+    return g;
+  };
+  const mesh = (parent, geo, material, x, y, z = 0) => {
+    const [ox, oy] = parent.userData.origin || [0, 0];
+    const m = new THREE.Mesh(geo, material);
+    m.position.set(x - ox, -(y - oy), z);
+    parent.add(m);
+    return m;
+  };
+  const capsule = (r, from, to) => new THREE.CapsuleGeometry(r, Math.max(0.1, to - from - 2 * r), 6, 16);
+  const tube = (points, r, seg = 24) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), seg, r, 10, false);
+  const quad = (x0, y0, cx, cy, x1, y1, ox = 0, oy = 0, z = 0) => {
+    const c = new THREE.QuadraticBezierCurve3(P(x0 - ox, y0 - oy, z), P(cx - ox, cy - oy, z), P(x1 - ox, y1 - oy, z));
+    return c.getPoints(16);
+  };
+
+  const root = new THREE.Group(); // mirrored for facing
+  scene.add(root);
+  const turn = new THREE.Group(); // a constant three-quarter turn so the depth shows
+  turn.position.set(80, 0, 0);
+  root.add(turn);
+  const model = new THREE.Group();
+  model.position.set(-80, 0, 0);
+  turn.add(model);
+  const body = pivot(model, 80, 190);
+
+  // the comb's spine: a rounded slab, lighter at the top like the SVG gradient
+  const DEPTH = 22; // front face sits at z = DEPTH
+  const shape = new THREE.Shape();
+  const rr = (x, y, w, h, r) => {
+    shape.moveTo(x + r, y);
+    shape.lineTo(x + w - r, y);
+    shape.quadraticCurveTo(x + w, y, x + w, y + r);
+    shape.lineTo(x + w, y + h - r);
+    shape.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    shape.lineTo(x + r, y + h);
+    shape.quadraticCurveTo(x, y + h, x, y + h - r);
+    shape.lineTo(x, y + r);
+    shape.quadraticCurveTo(x, y, x + r, y);
+  };
+  rr(28, -114, 104, 56, 22); // SVG rect 20,50 120x72 r30, inset by the bevel
+  const spineGeo = new THREE.ExtrudeGeometry(shape, {
+    depth: 2 * (DEPTH - 10),
+    bevelEnabled: true,
+    bevelThickness: 10,
+    bevelSize: 8,
+    bevelSegments: 10,
+    curveSegments: 32,
+  });
+  spineGeo.translate(0, 0, -(DEPTH - 10));
+  spineGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(spineGeo.attributes.position.count * 3), 3));
+  mesh(body, spineGeo, mat.body, 0, 0);
+
+  // teeth hang from their tops and sway
+  const teeth = [...svg.querySelectorAll('.cb-tooth')].map((t) => {
+    const x = +t.getAttribute('x') + 3.5;
+    const y = +t.getAttribute('y');
+    const h = +t.getAttribute('height');
+    const g = pivot(body, x, y, -2);
+    mesh(g, capsule(3.6, y, y + h), mat.limb, x, y + h / 2, 0);
+    return { g, src: t };
+  });
+
+  // legs pivot at the hips, feet are squashed balls
+  const leg = (cls, x, footX, jx, jy) => {
+    const g = pivot(body, jx, jy, 0);
+    mesh(g, capsule(6, 116, 186), mat.limb, x, 151, 0);
+    const foot = mesh(g, new THREE.SphereGeometry(1, 24, 16), mat.accent, footX, 187, 4);
+    foot.scale.set(12, 6.5, 11);
+    return { g, src: svg.querySelector(cls) };
+  };
+  const legs = [leg('.cb-leg-l', 48, 45, 48, 118), leg('.cb-leg-r', 112, 115, 112, 118)];
+
+  // arms are bent tubes from the shoulder with a ball hand
+  const arm = (cls, sx, sy, cx, cy, hx, hy) => {
+    const g = pivot(body, sx, sy, 0);
+    const m = new THREE.Mesh(tube(quad(sx, sy, cx, cy, hx, hy - 1, sx, sy), 4), mat.limb);
+    g.add(m);
+    mesh(g, new THREE.SphereGeometry(6.5, 24, 16), mat.accent, hx, hy, 0);
+    return { g, src: svg.querySelector(cls), inward: sx < 80 ? -1 : 1 };
+  };
+  const arms = [arm('.cb-arm-l', 30, 92, 16, 102, 12, 121), arm('.cb-arm-r', 130, 92, 144, 102, 148, 121)];
+
+  // the curl on top
+  const tuftG = pivot(body, 80, 52, 0);
+  {
+    const curve = new THREE.CurvePath();
+    const c3 = (a, b, c, d) => new THREE.CubicBezierCurve3(P(a[0] - 80, a[1] - 52), P(b[0] - 80, b[1] - 52), P(c[0] - 80, c[1] - 52), P(d[0] - 80, d[1] - 52));
+    curve.add(c3([80, 52], [74, 34], [94, 26], [93, 41]));
+    curve.add(c3([93, 41], [92, 49], [83, 47], [86, 40]));
+    tuftG.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 2.6, 10, false), mat.limb));
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(2.6, 12, 8), mat.limb);
+    tip.position.copy(P(6, -12));
+    tuftG.add(tip);
+  }
+  const tuft = { g: tuftG, src: svg.querySelector('.cb-tuft') };
+
+  // face, on the front of the spine
+  const eye = (cls, x, y) => {
+    const g = pivot(body, x, y, DEPTH);
+    const white = mesh(g, new THREE.SphereGeometry(1, 32, 20), mat.white, x, y, 0);
+    white.scale.set(11, 13, 5);
+    const pupil = new THREE.Group();
+    g.add(pupil);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(6.5, 24, 16), mat.ink);
+    ball.scale.z = 0.35;
+    ball.position.set(0, -2, 4.4);
+    const glint = new THREE.Mesh(new THREE.SphereGeometry(2.2, 12, 8), mat.glint);
+    glint.position.set(2.5, 1, 6.6);
+    pupil.add(ball, glint);
+    const src = svg.querySelector(cls);
+    return { g, pupil, src, srcPupil: src.querySelector('.cb-pupil') };
+  };
+  const eyes = [eye('.cb-eye-l', 61, 84), eye('.cb-eye-r', 99, 84)];
+  [45, 115].forEach((x) => {
+    const c = mesh(body, new THREE.SphereGeometry(1, 20, 12), mat.cheek, x, 101, DEPTH + 0.5);
+    c.scale.set(7, 4, 1);
+  });
+  // star eyes for excited moments
+  const star = new THREE.Shape();
+  for (let i = 0; i < 8; i++) {
+    const r = i % 2 ? 2.6 : 11;
+    const a = (i / 8) * Math.PI * 2 + Math.PI / 2;
+    star[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r);
+  }
+  const starGeo = new THREE.ExtrudeGeometry(star, { depth: 1.5, bevelEnabled: true, bevelThickness: 0.8, bevelSize: 0.6, bevelSegments: 2 });
+  [61, 99].forEach((x) => mesh(body, starGeo, mat.sparkle, x, 84, DEPTH + 5.5));
+
+  // mouth: rebuilt only when the SVG mouth path changes shape
+  const mouthSrc = svg.querySelector('.cb-mouth');
+  const mouth = new THREE.Mesh(new THREE.BufferGeometry(), mat.ink);
+  mouth.position.z = DEPTH + 0.6;
+  body.add(mouth);
+  let mouthD = '';
+  function syncMouth() {
+    const d = mouthSrc.getAttribute('d');
+    if (d === mouthD) return;
+    mouthD = d;
+    const n = d.match(/-?\d*\.?\d+/g)?.map(Number);
+    if (!n || n.length < 6) return;
+    const [ox, oy] = body.userData.origin;
+    mouth.geometry.dispose();
+    mouth.geometry = tube(quad(n[0], n[1], n[2], n[3], n[4], n[5], ox, oy), 1.7, 20);
+  }
+
+  // colours from the active theme
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  function syncColours() {
+    const top = new THREE.Color(css('--primary-2') || '#f4b8c2');
+    const bottom = new THREE.Color(css('--primary') || '#e58fa0');
+    mat.limb.color.copy(bottom);
+    mat.sparkle.color.copy(bottom);
+    mat.accent.color.set(css('--accent') || '#f2c98a');
+    const pos = spineGeo.attributes.position;
+    const col = spineGeo.attributes.color;
+    const c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const t = THREE.MathUtils.clamp((pos.getY(i) + 122) / 72, 0, 1); // 0 at the bottom, 1 at the top
+      c.copy(bottom).lerp(top, t);
+      col.setXYZ(i, c.r, c.g, c.b);
+    }
+    col.needsUpdate = true;
+  }
+  syncColours();
+  new MutationObserver(() => requestAnimationFrame(syncColours)).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  });
+
+  function resize() {
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    if (!w || !h) return;
+    renderer.setSize(w * ((VIEW.x1 - VIEW.x0) / 160), h * ((VIEW.y1 - VIEW.y0) / 200), false);
+  }
+  new ResizeObserver(resize).observe(el);
+  resize();
+
+  // copy the SVG rig's pose: SVG rotations are clockwise in a y-down space, so they flip sign
+  const get = gsap.getProperty;
+  const rot = (g, src) => {
+    g.rotation.z = -THREE.MathUtils.degToRad(+get(src, 'rotation') || 0);
+  };
+  const bodySrc = svg.querySelector('.cb-body');
+  gsap.ticker.add(() => {
+    if (!el.offsetWidth || +getComputedStyle(el).opacity === 0) return;
+    const facing = +get(svg, 'scaleX') || 1;
+    root.scale.x = facing;
+    root.position.x = 80 * (1 - facing); // mirror about the middle of the box
+    turn.rotation.y = 0.38 + Math.sin(performance.now() / 1400) * 0.05;
+    body.position.y = -190 - (+get(bodySrc, 'y') || 0);
+    rot(body, bodySrc);
+    teeth.forEach((t) => rot(t.g, t.src));
+    legs.forEach((l) => rot(l.g, l.src));
+    arms.forEach((a) => {
+      rot(a.g, a.src);
+      // an arm swinging in across the body (e.g. hand to chin) comes out in front of it
+      const inward = ((+get(a.src, 'rotation') || 0) * a.inward) / 70;
+      a.g.position.z = THREE.MathUtils.clamp(inward, 0, 1) * (DEPTH + 7);
+    });
+    rot(tuft.g, tuft.src);
+    eyes.forEach((e) => {
+      e.g.scale.y = +get(e.src, 'scaleY') || 1;
+      e.pupil.position.set(+get(e.srcPupil, 'x') || 0, -(+get(e.srcPupil, 'y') || 0), 0);
+    });
+    const pupilsShown = +get(eyes[0].srcPupil, 'opacity') > 0.05; // hidden while the eyes are stars
+    eyes.forEach((e) => (e.pupil.visible = pupilsShown));
+    mat.sparkle.opacity = +get(svg.querySelector('.cb-sparkle'), 'opacity') || 0;
+    syncMouth();
+    renderer.render(scene, camera);
+  });
+})();
+
+/* ------------------------------------------------------------------ */
 /* AI demos: Comby's insight feed and COMB Studio's style preview.     */
 /* Both only run while on screen.                                      */
 /* ------------------------------------------------------------------ */
