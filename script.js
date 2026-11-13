@@ -686,7 +686,7 @@ const comby = (() => {
         product: "Here's your whole salon day at a glance!",
         features: 'Everything your salon needs. Follow me!',
         ai: "Psst… I'm your AI business advisor too! And meet COMB Studio.",
-        workflow: 'Book, know, run, grow. Step by step.',
+        workflow: 'Book, know, run, grow. I got it covered.',
         cta: "Let's talk! Book your demo 🎉",
         click: 'Hehe, that tickles! 😄',
       },
