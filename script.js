@@ -362,11 +362,123 @@ function setupSceneTriggers() {
 /* synthesised live with Web Audio. Off by default: browsers only      */
 /* allow audio after a user gesture.                                   */
 /* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/* Background music: a soft, generated lo-fi loop (warm chords, a     */
+/* round bass and a few plucked notes), made with Web Audio so there  */
+/* is nothing to download or license. Kept quiet, and it ducks        */
+/* further whenever Comby speaks.                                      */
+/* ------------------------------------------------------------------ */
+function makeMusic(ctx, destination) {
+  const BEAT = 60 / 72;
+  const BAR = BEAT * 4;
+  const LEVEL = 0.6; // overall music volume: about 9 dB under Comby's voice
+  const DUCKED = 1; // share of that volume left while Comby talks (1 = no dip)
+  // Cmaj7, Am7, Fmaj7, G6sus: [bass, ...chord] as MIDI notes, gently voice-led
+  const CHORDS = [
+    [36, 60, 64, 67, 71],
+    [33, 60, 64, 67, 69],
+    [29, 60, 64, 65, 69],
+    [31, 59, 62, 67, 69],
+  ];
+  const hz = (m) => 440 * 2 ** ((m - 69) / 12);
+
+  const out = ctx.createGain();
+  out.gain.value = 0;
+  const duck = ctx.createGain();
+  const tone = ctx.createBiquadFilter(); // takes the edge off, like an old tape
+  tone.type = 'lowpass';
+  tone.frequency.value = 2400;
+  tone.Q.value = 0.4;
+  // a small, soft room
+  const verb = ctx.createConvolver();
+  const len = Math.round(ctx.sampleRate * 2.4);
+  const ir = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 3;
+  }
+  verb.buffer = ir;
+  const wet = ctx.createGain();
+  wet.gain.value = 0.3;
+  const bus = ctx.createGain();
+  bus.connect(tone);
+  bus.connect(verb).connect(wet).connect(tone);
+  tone.connect(duck).connect(out).connect(destination);
+
+  function note(midi, t, { dur, vol, type = 'sine', attack = 0.02, partial = 0 }) {
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(bus);
+    const voices = [[1, 1]];
+    if (partial) voices.push([2, partial]); // a quiet octave makes a sine sound like soft keys
+    voices.forEach(([mult, amp]) => {
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.frequency.value = hz(midi) * mult;
+      o.detune.value = (Math.random() - 0.5) * 8; // slightly out of tune, warmer
+      const a = ctx.createGain();
+      a.gain.value = amp;
+      o.connect(a).connect(g);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    });
+  }
+
+  function playBar(i, t) {
+    const [bass, ...chord] = CHORDS[i % CHORDS.length];
+    // keys: the chord, softly rolled
+    chord.forEach((m, k) => note(m, t + k * 0.03, { dur: BAR * 1.1, vol: 0.055, partial: 0.18, attack: 0.03 }));
+    // bass on beats 1 and 3
+    note(bass, t, { dur: BEAT * 1.8, vol: 0.16, attack: 0.02 });
+    note(bass, t + BEAT * 2, { dur: BEAT * 1.6, vol: 0.11, attack: 0.02 });
+    // a few plucked notes an octave up, different every time round
+    for (let s = 0; s < 8; s++) {
+      if (Math.random() > (s % 2 ? 0.22 : 0.4)) continue;
+      const m = chord[Math.floor(Math.random() * chord.length)] + 12;
+      note(m, t + s * (BEAT / 2), { dur: 0.9, vol: 0.03, type: 'triangle', attack: 0.005 });
+    }
+  }
+
+  let timer = null;
+  let bar = 0;
+  let nextBar = 0;
+  function schedule() {
+    while (nextBar < ctx.currentTime + 0.5) {
+      playBar(bar++, nextBar);
+      nextBar += BAR;
+    }
+  }
+
+  return {
+    start() {
+      if (timer) return;
+      nextBar = ctx.currentTime + 0.1;
+      schedule();
+      timer = setInterval(schedule, 200);
+      out.gain.cancelScheduledValues(ctx.currentTime);
+      out.gain.setTargetAtTime(LEVEL, ctx.currentTime, 1.2); // slow fade in
+    },
+    stop() {
+      if (!timer) return;
+      clearInterval(timer);
+      timer = null;
+      out.gain.cancelScheduledValues(ctx.currentTime);
+      out.gain.setTargetAtTime(0, ctx.currentTime, 0.25);
+    },
+    duck(down) {
+      duck.gain.setTargetAtTime(down ? DUCKED : 1, ctx.currentTime, down ? 0.08 : 0.6);
+    },
+  };
+}
+
 const sfx = (() => {
   const toggleBtn = document.querySelector('.sound-toggle');
   let ctx = null;
   let master = null;
   let noiseBuf = null;
+  let music = null;
   let on = false;
   try {
     on = localStorage.getItem('comb-sound') === '1';
@@ -383,12 +495,22 @@ const sfx = (() => {
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
       const data = noiseBuf.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      music = makeMusic(ctx, ctx.destination);
+      ctx.onstatechange = syncMusic;
     }
     if (ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {});
+    syncMusic(); // a context created during a click starts running without a statechange event
     return ctx;
   }
 
   const ready = () => on && ensure() && ctx.state === 'running';
+
+  // music plays whenever sound is on and the browser lets audio run
+  function syncMusic() {
+    if (!music) return;
+    if (on && ctx.state === 'running') music.start();
+    else music.stop();
+  }
 
   // one oscillator note with a quick attack and exponential decay
   function tone(freq, { at = 0, dur = 0.08, type = 'sine', vol = 0.2, to = null, vibrato = 0 } = {}) {
@@ -569,7 +691,13 @@ const sfx = (() => {
       return 'blocked';
     }
     api.stopSpeaking();
+    music?.duck(true); // the music steps back while Comby talks
     const token = (lineToken = {});
+    const done = onEnd;
+    onEnd = () => {
+      music?.duck(false);
+      done?.();
+    };
     const clip = clipFor(text);
     let fellBack = false;
     // both the error event and the rejected play() can report a missing clip; act once
@@ -587,7 +715,7 @@ const sfx = (() => {
     };
     clip.onerror = fallback; // e.g. no recording for this line yet
     clip.currentTime = 0;
-    clip.volume = opts.clipVolume ?? 0.8;
+    clip.volume = opts.clipVolume ?? 0.2;
     playing = clip;
     clip.play().catch(fallback);
     return true;
@@ -595,6 +723,7 @@ const sfx = (() => {
 
   api.stopSpeaking = () => {
     lineToken = null;
+    music?.duck(false);
     if (playing) {
       playing.pause();
       playing = null;
@@ -607,7 +736,7 @@ const sfx = (() => {
 
   function render() {
     toggleBtn.setAttribute('aria-pressed', String(on));
-    toggleBtn.setAttribute('aria-label', on ? "Mute Comby's voice" : "Turn on Comby's voice");
+    toggleBtn.setAttribute('aria-label', on ? "Mute Comby's voice and music" : "Turn on Comby's voice and music");
   }
 
   api.setOn = (value) => {
@@ -619,6 +748,7 @@ const sfx = (() => {
     toggleBtn.classList.remove('is-hinting');
     if (on) ensure();
     else api.stopSpeaking();
+    syncMusic();
   };
 
   // browsers block speech until the visitor clicks, taps or presses a key (scrolling
