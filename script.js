@@ -371,7 +371,7 @@ function setupSceneTriggers() {
 function makeMusic(ctx, destination) {
   const BEAT = 60 / 72;
   const BAR = BEAT * 4;
-  const LEVEL = 0.6; // overall music volume: about 9 dB under Comby's voice
+  const LEVEL = 0.54; // overall music volume
   const DUCKED = 1; // share of that volume left while Comby talks (1 = no dip)
   // Cmaj7, Am7, Fmaj7, G6sus: [bass, ...chord] as MIDI notes, gently voice-led
   const CHORDS = [
@@ -715,7 +715,7 @@ const sfx = (() => {
     };
     clip.onerror = fallback; // e.g. no recording for this line yet
     clip.currentTime = 0;
-    clip.volume = opts.clipVolume ?? 0.2;
+    clip.volume = opts.clipVolume ?? 0.35;
     playing = clip;
     clip.play().catch(fallback);
     return true;
@@ -794,6 +794,9 @@ const comby = (() => {
   const hit = el.querySelector('.comby-hit');
   const bubble = el.querySelector('.comby-bubble');
 
+  // every string in a lines block (some entries are lists or per-section tables)
+  const allLines = (v) => (typeof v === 'string' ? [v] : Object.values(v).flatMap(allLines));
+
   const RIGS = {
     comby: {
       label: 'Comby (comb)',
@@ -818,7 +821,40 @@ const comby = (() => {
         ai: "Psst… I'm your AI business advisor too! And meet COMB Studio.",
         workflow: 'Book, know, run, grow. I got it covered.',
         cta: "Let's talk! Book your demo 🎉",
-        click: 'Hehe, that tickles! 😄',
+        // a different reaction each click
+        click: [
+          'Hehe, that tickles! 😄',
+          'Boop! Right back at you.',
+          'Careful, my teeth are ticklish!',
+          "I'm all ears. Well, all teeth.",
+        ],
+        // one line per feature card, as it slides into view
+        cards: [
+          'Appointments: walk-ins, confirmations, no missed slots.',
+          "Customer intelligence. I remember every client, so you don't have to.",
+          'Billing and payments, all in one place. No chasing!',
+          'Shifts and attendance, across every branch.',
+          'Your numbers, in plain words, every single day.',
+          "WhatsApp center is coming soon. I can't wait!",
+        ],
+        // a short description of each section, right after the arrival line
+        about: {
+          hero: 'COMB brings appointments, clients, billing and your team into one simple dashboard.',
+          why: 'No more chasing bookings and payments by hand. COMB keeps it all in one place, and I flag what needs you.',
+          product: "Revenue, bookings and who's on shift, all live on one screen.",
+          ai: 'I read your numbers and flag trends, quiet clients and staffing gaps. COMB Studio lets clients preview a new cut or colour first.',
+          workflow: 'Book smarter, know your clients, run the day, then grow with my insights.',
+          cta: "Book a quick demo, and we'll show you COMB with your own salon in mind.",
+        },
+        // said once if the visitor lingers in a section
+        waiting: {
+          hero: "Scroll on down. I'll walk you through everything!",
+          why: 'Every minute on admin is a minute away from your clients.',
+          product: "Revenue's up eight percent today. Not bad, right?",
+          ai: "See that? Three clients haven't booked in weeks. I'd send them a reminder.",
+          workflow: "Four simple steps, and I'm with you at every one.",
+          cta: "Go on, the demo's quick. I'll be there too!",
+        },
       },
       // swaying teeth and a bouncy curl
       idle: (svg) => {
@@ -853,7 +889,7 @@ const comby = (() => {
       pupils: svg.querySelectorAll('.cb-pupil'),
     });
     hit.setAttribute('aria-label', `${rig.label}, your guide. Click to say hi.`);
-    if (sfx.on) sfx.preload(Object.values(rig.lines));
+    if (sfx.on) sfx.preload(allLines(rig.lines));
     gsap.set(svg, { scaleX: facing });
   }
 
@@ -942,6 +978,14 @@ const comby = (() => {
   let featureProgress = 0;
   let hinted = false;
   let lastLine = '';
+  let busy = false; // a speech bubble is showing
+  let waitTimer = null;
+  let cardTimer = null;
+  let shownCard = -1;
+  let clickCount = 0;
+  const saidCards = new Set();
+  const saidWaiting = new Set();
+  const saidAbout = new Set();
   let lineBlocked = false;
   useRig('comby');
 
@@ -1024,14 +1068,22 @@ const comby = (() => {
     setMouth('smile');
   }
 
+  // text is one line, or several that show together and are spoken back to back
   function say(text, ms = 4200) {
     clearTimeout(bubbleTimer);
+    busy = true;
     lastLine = text;
-    bubble.textContent = text;
-    const speaking = sfx.speak(text, rig.voice, () => {
-      clearTimeout(bubbleTimer);
-      bubbleTimer = setTimeout(hideBubble, 1200);
-    });
+    const parts = Array.isArray(text) ? text : [text];
+    bubble.textContent = parts.join(' ');
+    const speakPart = (i) =>
+      sfx.speak(parts[i], rig.voice, () => {
+        if (i + 1 < parts.length) return speakPart(i + 1);
+        clearTimeout(bubbleTimer);
+        bubbleTimer = setTimeout(hideBubble, 1200);
+      });
+    const speaking = speakPart(0);
+    // without sound, leave the bubble up long enough to read
+    const readMs = Math.max(ms, bubble.textContent.split(/\s+/).length * 330 + 1200);
     lineBlocked = speaking === 'blocked';
     if (lineBlocked) {
       const note = document.createElement('small');
@@ -1045,21 +1097,52 @@ const comby = (() => {
       { opacity: 1, scale: 1, y: 0, duration: prefersReducedMotion ? 0 : 0.45, ease: 'back.out(2)', overwrite: true }
     );
     // while speaking, the bubble stays until the line ends (with a safety cap)
-    bubbleTimer = setTimeout(hideBubble, speaking === true ? 15000 : speaking === 'blocked' ? ms + 2500 : ms);
+    bubbleTimer = setTimeout(hideBubble, speaking === true ? 12000 * parts.length : speaking === 'blocked' ? readMs + 2500 : readMs);
   }
 
   function hideBubble() {
     clearTimeout(bubbleTimer);
+    busy = false;
     sfx.stopSpeaking();
     gsap.to(bubble, { opacity: 0, scale: 0.85, duration: 0.2, overwrite: true });
   }
 
-  function arrive(name, a, line = rig.lines[name]) {
+  const placeBubble = (a) => el.classList.toggle('bubble-left', a.bubble ? a.bubble === 'left' : a.fx > window.innerWidth * 0.55);
+
+  // a section's greeting, plus its short description the first time, in one bubble
+  // he talks once he's in place, so the line always matches where he's standing
+  function speakFor(name) {
+    const about = rig.lines.about?.[name];
+    const withAbout = about && !saidAbout.has(name);
+    if (withAbout) saidAbout.add(name);
+    say(withAbout ? [rig.lines[name], about] : rig.lines[name]);
+  }
+
+  function arrive(name, a) {
     api.arrived = true;
     setFacing(a.face);
-    el.classList.toggle('bubble-left', a.bubble ? a.bubble === 'left' : a.fx > window.innerWidth * 0.55);
+    placeBubble(a);
     poseTl = POSES[name]?.() || null;
-    say(line);
+    speakFor(name);
+    clearTimeout(waitTimer);
+    // if the visitor stays a while, Comby adds a tip about what's on screen
+    const extra = rig.lines.waiting?.[name];
+    const queueWaiting = () => {
+      if (!extra || saidWaiting.has(name)) return;
+      const tryWaiting = () => {
+        if (scene !== name || !api.arrived) return;
+        if (busy) return (waitTimer = setTimeout(tryWaiting, 1500));
+        saidWaiting.add(name);
+        say(extra);
+      };
+      waitTimer = setTimeout(tryWaiting, 12000);
+    };
+    queueWaiting();
+    if (name === 'features') {
+      shownCard = -1;
+      // queue a line for the card already in view
+      api.showCard(isMobile() ? cardInView : Math.round(featureProgress * (rig.lines.cards.length - 1)));
+    }
     if (name === 'hero' && !hinted) {
       hinted = true;
       sfx.hint();
@@ -1113,9 +1196,39 @@ const comby = (() => {
     });
   };
 
+  // a line about each feature card as it comes into view, once the current line is done
+  let cardInView = 0;
+  api.showCard = (card) => {
+    cardInView = card;
+    if (scene !== 'features' || !api.arrived || card === shownCard) return;
+    shownCard = card;
+    clearTimeout(cardTimer);
+    const tryCard = () => {
+      if (scene !== 'features' || shownCard !== card || saidCards.has(card)) return;
+      if (busy) return (cardTimer = setTimeout(tryCard, 500)); // let Comby finish first
+      saidCards.add(card);
+      say(rig.lines.cards[card], 3200);
+    };
+    cardTimer = setTimeout(tryCard, 700);
+  };
+
+  // on phones the cards stack vertically, so watch which one is on screen
+  const cardIO = new IntersectionObserver(
+    (entries) => {
+      if (!isMobile()) return;
+      entries.forEach((e) => {
+        if (e.isIntersecting) api.showCard([...cardEls].indexOf(e.target));
+      });
+    },
+    { threshold: 0.6 }
+  );
+  const cardEls = document.querySelectorAll('.feature-card');
+  cardEls.forEach((c) => cardIO.observe(c));
+
   // features: walk along the progress bar as the cards scroll sideways
   api.follow = (progress) => {
     featureProgress = progress;
+    if (!isMobile()) api.showCard(Math.round(progress * (rig.lines.cards.length - 1)));
     if (scene !== 'features' || !api.arrived || isMobile()) return;
     const t = target(anchor('features'));
     const dx = t.x - gsap.getProperty(el, 'x');
@@ -1133,7 +1246,7 @@ const comby = (() => {
 
   document.querySelector('.sound-toggle').addEventListener('click', () => {
     sfx.setOn(!sfx.on);
-    if (sfx.on) sfx.preload(Object.values(rig.lines));
+    if (sfx.on) sfx.preload(allLines(rig.lines));
     if (sfx.on && entered) say('Yay, now you can hear me! 🎶', 2600);
     else if (!sfx.on) {
       // muted mid-line: the bubble no longer waits for the voice
@@ -1145,7 +1258,7 @@ const comby = (() => {
   // click: a happy jump
   hit.addEventListener('click', () => {
     if (!api.arrived) return;
-    say(rig.lines.click, 2200);
+    say(rig.lines.click[clickCount++ % rig.lines.click.length], 2200);
     sfx.giggle();
     if (prefersReducedMotion) return;
     sfx.hop();

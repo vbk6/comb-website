@@ -6,8 +6,8 @@
 //
 // Usage (macOS, needs Node 18+ and an ElevenLabs API key):
 //   node tools/voice/extract_lines.mjs > /tmp/comby-lines.json
-//   ELEVENLABS_API_KEY=... node tools/voice/make_clips_elevenlabs.mjs /tmp/comby-lines.json [--voice <id>] [--only <regex>]
-import { readFileSync, writeFileSync, mkdirSync, unlinkSync, statSync } from 'node:fs';
+//   ELEVENLABS_API_KEY=... node tools/voice/make_clips_elevenlabs.mjs /tmp/comby-lines.json [--voice <id>] [--only <regex>] [--missing]
+import { readFileSync, writeFileSync, mkdirSync, unlinkSync, statSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -23,9 +23,10 @@ const opt = (name) => {
 const linesFile = args.find((a, i) => !a.startsWith('--') && !(args[i - 1] || '').startsWith('--'));
 const voice = opt('--voice') || LIAM;
 const only = opt('--only') ? new RegExp(opt('--only')) : null;
+const missingOnly = args.includes('--missing'); // skip lines that already have a clip
 const key = process.env.ELEVENLABS_API_KEY;
 if (!linesFile || !key) {
-  console.error('usage: ELEVENLABS_API_KEY=... node make_clips_elevenlabs.mjs <lines.json> [--voice <id>] [--only <regex>]');
+  console.error('usage: ELEVENLABS_API_KEY=... node make_clips_elevenlabs.mjs <lines.json> [--voice <id>] [--only <regex>] [--missing]');
   process.exit(1);
 }
 
@@ -51,6 +52,7 @@ mkdirSync(OUT_DIR, { recursive: true });
 const lines = JSON.parse(readFileSync(linesFile, 'utf8'));
 for (const text of lines) {
   if (only && !only.test(text)) continue;
+  if (missingOnly && existsSync(join(OUT_DIR, `${fnv1a(text)}.m4a`))) continue;
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },

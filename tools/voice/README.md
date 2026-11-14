@@ -15,8 +15,8 @@ node tools/voice/extract_lines.mjs > /tmp/comby-lines.json
 ELEVENLABS_API_KEY=... node tools/voice/make_clips_elevenlabs.mjs /tmp/comby-lines.json
 ```
 
-Options: `--only "<regex>"` re-records just the matching lines; `--voice <id>` uses a
-different ElevenLabs voice.
+Options: `--missing` records only lines that don't have a clip yet; `--only "<regex>"`
+re-records just the matching lines; `--voice <id>` uses a different ElevenLabs voice.
 
 Unused clips (from lines that were changed) can be deleted from `audio/voice/`.
 
